@@ -1,6 +1,9 @@
 import React, { useState, forwardRef, createRef } from 'react';
 import { Box, MenuItem, Divider, Button } from '@material-ui/core';
-import { MenuList, Paper, Popover, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Typography, CircularProgress, Backdrop } from '@material-ui/core';
+import {
+  MenuList, Paper, Popover, Dialog, DialogActions, DialogContent, DialogTitle,
+  IconButton, Typography, CircularProgress, Backdrop, Checkbox, Avatar
+} from '@material-ui/core';
 
 import { lighten, makeStyles } from '@material-ui/core/styles';
 import { blue, green, grey, orange, red } from '@material-ui/core/colors';
@@ -54,15 +57,15 @@ const useStyles = makeStyles(theme => ({
   pageTitle: {
     color: theme.palette.text.primary,
     fontWeight: 800,
-    lineHeight: 1.5,
-    marginBottom: 20,
+    lineHeight: 0.5,
+    marginBottom: 5,
     textShadow: '6px 4px 6px hsla(0,0%,45.9%,.8)',
   },
   tableNumberField: {
     color: theme.palette.text.primary,
     fontWeight: 800,
-    lineHeight: 1.5,
-    marginBottom: 20,
+    lineHeight: 0.5,
+    marginBottom: 5,
     textShadow: '2px 2px 3px hsla(0,0%,45.9%,.8)',
   },
 }));
@@ -137,6 +140,7 @@ const ListAll = (props) => {
   const [loading, setLoading] = useState(false);
   const [index, setIndex] = useState({ index: 0, status: false });
   const [testRun, setTestRun] = useState({});
+  const [runAllTest, setRunAllTes] = useState(false);
 
 
 
@@ -147,10 +151,14 @@ const ListAll = (props) => {
 
   const columns = [
     {
-      title: 'S#', width: "4%", field: 'index', render: (rowData) => {
+      title: <span style={{ cursor: "pointer" }} onClick={() => {
+        setRunAllTes(true)
+      }}>
+        Select All
+      </span>, field: 'index', render: (rowData) => {
         return (
           <div>
-            <h4>{rowData.index}</h4>
+            <Checkbox checked={runAllTest} />
           </div>
         )
       }
@@ -408,20 +416,12 @@ const ListAll = (props) => {
   return (
     <div>
       <PageContainer heading="" breadcrumbs={breadcrumbs}>
-        <div>
-          <Box className={classes.pageTitle} fontSize={{ xs: 30, sm: 30 }}>
-            All Tests
-          </Box>
-        </div>
-        <Divider />
-        <br />
-        <Box display='flex' flexDirection='row' justifyContent='end'>
+
+        <Box lineHeight={"0.5px"} display='flex' flexDirection='row' justifyContent='end'>
           <Button type='button' variant="contained" color="primary" onClick={() => { setShowCreateDial(true) }}>
             Create New Test
           </Button>
         </Box>
-        <br />
-
         <MaterialTable
           tableRef={tableRef}
           icons={tableIcons}
@@ -557,12 +557,11 @@ const ListAll = (props) => {
               </Button>
             </DialogActions>
           </Dialog>}
-
+        {/* runAllTest */}
         {showCreateDial && <AddNew hideDialog={setShowCreateDial} setRefereshData={setRefereshData} />}
         {showDuplicate && <Duplicate name="clone" hideDialog={setShowDuplicate} setRefereshData={setRefereshData} rowData={rowData} />}   {/* for clone test */}
         {editTest && <Duplicate name="edit" hideDialog={setEditTest} setRefereshData={setRefereshData} rowData={rowData} />}
       </PageContainer>
-      {/* } */}
     </div>
   );
 };

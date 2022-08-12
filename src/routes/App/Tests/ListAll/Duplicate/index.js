@@ -70,18 +70,9 @@ const Toast = MySwal.mixin({
 const EditDialog = ({ name, hideDialog, setRefereshData, rowData }) => {
   // dialogState
   const classes = useStyles();
-  const [formState, setFormState] = useState({ ...rowData, name: 'copy of ' + rowData.name });
+  const [formState, setFormState] = useState({name: 'copy of '+ rowData.name });
   const [editData, setEditData] = useState({ name: rowData.name, description: rowData.description, script: rowData.script })
   const [loading, setLoading] = useState(false);
-
-
-
-  const handleOnChangeTF = (e) => {
-    var { name, value } = e.target;
-    e.preventDefault();
-    setFormState(prevState => ({ ...prevState, [name]: value }));
-  }
-
   const showMessage = (icon, text, title) => {
     Toast.fire({
       icon,
@@ -95,7 +86,8 @@ const EditDialog = ({ name, hideDialog, setRefereshData, rowData }) => {
 
   const submitRequest = (data) => {
     try {
-      Axios.post('/test', data).then(result => {
+      Axios.post('/test', data).
+      then(result => {
         result = result.data;;
         if (result.status) {
           showMessage('success', result.message);
@@ -143,14 +135,17 @@ const EditDialog = ({ name, hideDialog, setRefereshData, rowData }) => {
         setLoading(false);
         hideDialog(false)
       });
+
   }
 
   const onSubmit = (e) => {
     e.preventDefault();
     if (validate()) {
       try {
-        let { name, description, script } = formState
-        setFormState(prevState => ({ ...prevState, is_loading: true }))
+        let { description, script } = rowData;
+        let name=formState.name;
+        
+        // setFormState(prevState => ({ ...prevState, is_loading: true }))
         let dataToSubmit = { name, description, script, kind: 'test' };
         submitRequest(dataToSubmit)
       } catch (e) {
@@ -195,7 +190,8 @@ const EditDialog = ({ name, hideDialog, setRefereshData, rowData }) => {
               <Box mb={2}>
                 {
                   name === "clone" ?
-                    <BasicForm valuePart={formState.name} placeHolder="Test Name" state={formState} handleOnChangeTF={handleOnChangeTF} /> :
+                    <BasicForm valuePart={formState.name} placeHolder="Test Name" state={formState}
+                     handleOnChangeTF={(a)=>{setFormState({name:a.target.value})}} /> :
                     <>
                       <Backdrop open={loading}>
                         <CircularProgress color="secondary" />
@@ -206,9 +202,7 @@ const EditDialog = ({ name, hideDialog, setRefereshData, rowData }) => {
                         handleOnChangeTF={(e) => { setEditData({ name: editData.name, description: e.target.value, scrip: editData.script }) }} />
                       <BasicForm placeHolder="Script" valuePart={editData.script} state={formState}
                         handleOnChangeTF={(e) => { setEditData({ name: editData.name, description: editData.description, scrip: e.target.value }) }} />
-                      {/* const [editData,setEditData] = useState({name:"",description:"",script:""}) */}
                     </>
-
                 }
                 <Divider />
                 <br />
