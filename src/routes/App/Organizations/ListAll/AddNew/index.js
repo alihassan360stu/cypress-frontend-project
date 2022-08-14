@@ -69,15 +69,14 @@ const Toast = MySwal.mixin({
 const initalFormState = {
   name: '',
   description: '',
-  script: '',
   is_loading: false
 }
 
 const EditDialog = ({ hideDialog, setRefereshData }) => {
   // dialogState
   const classes = useStyles();
-  const [formState, setFormState] = useState(initalFormState);
   const org = useSelector(({ org }) => org);
+  const [formState, setFormState] = useState(initalFormState);
 
   const handleOnChangeTF = (e) => {
     var { name, value } = e.target;
@@ -98,7 +97,7 @@ const EditDialog = ({ hideDialog, setRefereshData }) => {
 
   const submitRequest = (data) => {
     try {
-      Axios.post('/test/create', data).then(result => {
+      Axios.post('/organization/create', data).then(result => {
         result = result.data;;
         if (result.status) {
           showMessage('success', result.message);
@@ -125,13 +124,9 @@ const EditDialog = ({ hideDialog, setRefereshData }) => {
       try {
         let { name, description, script } = formState
         setFormState(prevState => ({ ...prevState, is_loading: true }))
-        if (org) {
-          let dataToSubmit = { name, description, script, kind: 'test', org_id: org._id };
-          submitRequest(dataToSubmit)
 
-        } else {
-          MySwal.fire('Error', 'No Organization Selected', 'error');
-        }
+        let dataToSubmit = { name, description };
+        submitRequest(dataToSubmit)
       } catch (e) {
         MySwal.fire('Error', e, 'error');
       }
@@ -163,7 +158,7 @@ const EditDialog = ({ hideDialog, setRefereshData }) => {
           <CmtCardContent >
             <div>
               <Box className={classes.pageTitle} fontSize={{ xs: 15, sm: 15 }}>
-                Create New Test
+                Add Organization
               </Box>
             </div>
             <Divider />
@@ -175,7 +170,7 @@ const EditDialog = ({ hideDialog, setRefereshData }) => {
                 <br />
                 <Divider />
                 <Button style={{ marginTop: 10 }} type='submit' variant="contained" color="primary" disabled={formState.is_loading}>
-                  Create
+                  Add
                 </Button>
                 <Button style={{ marginTop: 10, marginLeft: 20 }} type='button' variant="contained" color="primary" disabled={formState.is_loading} onClick={handleClose}>
                   Cancel

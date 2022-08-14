@@ -12,7 +12,6 @@ import withReactContent from 'sweetalert2-react-content';
 import Axios from 'axios';
 import BasicForm from './BasicForm';
 import validator from 'validator'
-import PermissionsSelect from './PermissionsSelect'
 
 const MySwal = withReactContent(Swal);
 
@@ -68,22 +67,10 @@ const Toast = MySwal.mixin({
     },
 });
 
-
-const validationErrors = {
-    username: 'Invalid Username',
-    full_name: 'Invalid Full Name',
-    email: 'Invalid Email',
-    cnic: 'Invalid CNIC Number It Should Be 13 Digit Number Without Dashes',
-    password: 'Invalid Password, Password Must Contain A Digit A Small And Capital Word An Special Character And ',
-    contact: 'Invalid Contact Number',
-    role_id: 'Invalid Role Selected'
-};
-
-const EditDialog = ({ dialogState, setDialogState }) => {
+const EditDialog = ({ hideDialog, setRefereshData, rowData }) => {
     // dialogState
     const classes = useStyles();
-    const { authUser } = useSelector(({ auth }) => auth);
-    const [formState, setFormState] = useState({ ...dialogState.rowData, new_password: '', is_loading: false });
+    const [formState, setFormState] = useState({ ...rowData, new_password: '', is_loading: false });
 
     const handleOnChangeTF = (e) => {
         var { name, value } = e.target;
@@ -98,43 +85,20 @@ const EditDialog = ({ dialogState, setDialogState }) => {
         });
     }
 
+
     const validate = () => {
-        var { full_name, new_password, contact, role, allowed_devices } = formState
-
-        var values = { full_name, contact }
-        for (let key in values) {
-            if (validator.isEmpty(values[key])) {
-                showMessage('error', validationErrors[key]);
-                return false;
-            }
-        }
-
-        if (role.title === 'Cypress') {
-            if (Number(allowed_devices) < 1) {
-                showMessage('error', 'Allowed Devices Can Not Be Less Than 1');
-                return false;
-            }
-        }
-
-        if (new_password.length > 0)
-            if (!validator.isStrongPassword(new_password, {
-                minLength: 8, minLowercase: 1,
-                minUppercase: 1, minNumbers: 1, minSymbols: 1
-            })) {
-                showMessage('error', 'Password Must Include 1 Lower Case, 1 Upper Case, 1 Number And 1 Symbol And Min Length Is 8');
-                return false;
-            }
-
         return true;
     }
+
     const submitRequest = (data) => {
         try {
-            Axios.post(authUser.api_url + '/update-user', data).then(result => {
+            Axios.put('/test', data).then(result => {
                 result = result.data;;
                 if (result.status) {
                     showMessage('success', result.message, 'Success');
                     setTimeout(() => {
-                        setDialogState(prevState => ({ ...prevState, show: false, refreshData: true }))
+                        hideDialog(false)
+                        setRefereshData(true)
                     }, 2000);
                 } else {
                     setFormState(prevState => ({ ...prevState, is_loading: false }));
@@ -153,14 +117,9 @@ const EditDialog = ({ dialogState, setDialogState }) => {
         e.preventDefault();
         if (validate()) {
             try {
+                let { name, description, script } = formState
                 setFormState(prevState => ({ ...prevState, is_loading: true }))
-                let {
-                    _id, full_name, new_password, contact, allowed_devices
-                } = formState
-                const dataToSubmit = {
-                    user_id: _id, full_name, new_password, contact, allowed_devices,
-                    is_new_password: new_password.trim().length > 0 ? true : false
-                };
+                let dataToSubmit = { name, description, script, kind: 'test', test_id: formState._id };
                 submitRequest(dataToSubmit)
             } catch (e) {
                 MySwal.fire('Error', e, 'error');
@@ -171,7 +130,7 @@ const EditDialog = ({ dialogState, setDialogState }) => {
     const handleClose = (e) => {
         e.preventDefault();
         setTimeout(() => {
-            setDialogState(prevState => ({ ...prevState, show: false }))
+            hideDialog(false)
         }, 100);
     }
 
@@ -182,7 +141,7 @@ const EditDialog = ({ dialogState, setDialogState }) => {
                 fullWidth={true}
                 maxWidth={'md'}
                 scroll={'body'}
-                open={dialogState.show}
+                open={true}
                 onClose={(event, reason) => {
                     if (reason !== 'backdropClick') {
                         handleClose(event)
@@ -193,7 +152,7 @@ const EditDialog = ({ dialogState, setDialogState }) => {
                     <CmtCardContent >
                         <div>
                             <Box className={classes.pageTitle} fontSize={{ xs: 15, sm: 15 }}>
-                                Update User
+                                Update Test
                             </Box>
                         </div>
                         <Divider />

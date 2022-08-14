@@ -1,35 +1,39 @@
-import React, { useState, forwardRef, createRef, useEffect } from 'react';
-import { Box, MenuItem, Divider, Button } from '@material-ui/core';
-import {
-  MenuList, Paper, Popover, Dialog, DialogActions, DialogContent, DialogTitle,
-  IconButton, Typography, CircularProgress, Backdrop, Checkbox, Avatar
-} from '@material-ui/core';
+import React, { useState, forwardRef, createRef } from 'react';
+import { Box, MenuItem, CircularProgress, Fab, Tooltip } from '@material-ui/core';
+import { MenuList, Paper, Popover } from '@material-ui/core';
 
 import { lighten, makeStyles } from '@material-ui/core/styles';
-import { blue, green, grey, orange, red } from '@material-ui/core/colors';
+import { blue, green, orange } from '@material-ui/core/colors';
 import { useSelector } from 'react-redux';
+
 import PageContainer from '@jumbo/components/PageComponents/layouts/PageContainer';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import Axios from 'axios';
 import qs from 'qs';
+import Fade from 'react-reveal/Fade';
+
+
+import "react-virtualized/styles.css";
 
 import {
   AddBox, ArrowDownward, Check, ChevronLeft,
   ChevronRight, Clear, DeleteOutline, Edit,
   FilterList, FirstPage, LastPage, Remove, SaveAlt, Search, ViewColumn,
-  MoreVert, FileCopy, ControlPointDuplicate, Delete, PlayArrow, Close
+  MoreVert, FileCopy, ControlPointDuplicate, Delete, PlayArrow, Add,
 }
   from '@material-ui/icons';
-import GetAppIcon from '@material-ui/icons/GetApp';
-import BackupIcon from '@material-ui/icons/Backup';
+
 import MaterialTable from '@material-table/core';
-import BurstModeIcon from '@material-ui/icons/BurstMode';
 import { withStyles } from '@material-ui/styles';
+import EditDialog from './Edit';
 import { ExportCsv, ExportPdf } from '@material-table/exporters';
 import moment from 'moment';
 import AddNew from './AddNew';
 import Duplicate from './Duplicate';
+import BrowserSelect from './BrowserSelect';
+import MultiRun from './MultiRun';
+import { useEffect } from 'react';
 
 const MySwal = withReactContent(Swal);
 
@@ -55,29 +59,26 @@ const useStyles = makeStyles(theme => ({
     zIndex: theme.zIndex.drawer + 1,
     color: '#fff',
   },
+  buttons: {
+    // transition: 'all 6.6s ease',
+    transition: 'opacity 2.6s ease-in',
+  },
 
   pageTitle: {
     color: theme.palette.text.primary,
     fontWeight: 800,
-    lineHeight: 0.5,
-    marginBottom: 5,
+    lineHeight: 1.5,
+    marginBottom: 20,
     textShadow: '6px 4px 6px hsla(0,0%,45.9%,.8)',
   },
   tableNumberField: {
     color: theme.palette.text.primary,
     fontWeight: 800,
-    lineHeight: 0.5,
-    marginBottom: 5,
+    lineHeight: 1.5,
+    marginBottom: 20,
     textShadow: '2px 2px 3px hsla(0,0%,45.9%,.8)',
   },
 }));
-
-const initalState = {
-  totalData: 0,
-  is_loading: true,
-  showDialog: false,
-  rowData: {}
-}
 
 const tableIcons = {
   Add: forwardRef((props, ref) => <AddBox {...props} ref={ref} />),
@@ -135,112 +136,27 @@ const ListAll = (props) => {
   const [dialogState, setDialogState] = useState(initialDialogState);
   const [refereshData, setRefereshData] = useState(false);
   const [rowData, setRowData] = useState(undefined);
+  // const [runningIds, setRunningIds] = useState([]);
   const [showCreateDial, setShowCreateDial] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [showDuplicate, setShowDuplicate] = useState(false);
-  const [editTest, setEditTest] = useState(false);
-  const [deleteTest, setDeleteTest] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [index, setIndex] = useState({ index: 0, status: false });
-  const [testRun, setTestRun] = useState({});
-  const [runAllTest, setRunAllTes] = useState(false);
-  const [testSelectId, setTestSelectId] = useState([{ testId: "" }]);
-  const [getAllTestCases, setGetAllTestCases] = useState([]);
-  const [countCheckBox, setCountCheckBox] = useState(0);
-  const { authUser } = useSelector(({ auth }) => auth);
+  const [showBrowserSelect, setShowBrowserSelect] = useState(false);
+  const [showMultiRun, setShowMultiRun] = useState(false);
+  const [checkingAsync, setCheckingAsync] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const org = useSelector(({ org }) => org);
+  const [selectedRows, setSelectedRows] = useState([]);
+
   const [moreOptions, setMoreOptions] = useState([]);
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
-  let checking = (rowData) => { // setting checkbox open or no
-    var ifatchingId = false;
-    testSelectId.map((value) => {
-      if (value.testId === rowData._id) {
-        ifatchingId = true;
-      }
-    })
-    if (ifatchingId) {
-      return true;
-    }
-    else {
-      return false
-    }
-  }
+
   const columns = [
     {
-      title: countCheckBox > 1 ? <span style={{ cursor: "pointer" }} onClick={() => {
-        var temp = [testSelectId.length];
-        testSelectId.map((value, i) => {
-          temp[i] = { testId: "" };
-        })
-        setTestSelectId(temp);
-        setCountCheckBox(0);
-        setRunAllTes(false)
-      }}>
-        Un Select
-      </span>
-        :
-        <span style={{ cursor: "pointer" }}
-          onClick={() => {
-            if (Array.isArray(getAllTestCases)) {
-              setTestSelectId([{ testId: "" }])
-              var temp = [getAllTestCases.length];
-              getAllTestCases.map((value, index) => {
-                temp[index] = { testId: value._id };
-              });
-              setCountCheckBox(temp.length);
-              setTestSelectId(temp);
-            }
-          }}>
-          Select All
-        </span>
-      , field: 'index', render: (rowData) => {
+      title: 'S#', width: "4%", field: 'index', render: (rowData) => {
         return (
           <div>
-            <Checkbox
-              checked={checking(rowData) ? true : false}
-              onChange={() => {
-                var checkingIdMatchOrNo = true;
-                testSelectId.map((value) => {
-                  if (value.testId === rowData._id) {
-                    checkingIdMatchOrNo = false;
-                  }
-                })
-
-                if (checkingIdMatchOrNo) {
-                  var checkTemproryId = true;
-                  var index = 0;
-                  testSelectId.map((value, i) => {
-                    if (value.testId === "") {
-                      checkTemproryId = false;
-                      index = i;
-                      return
-                    }
-                  })
-                  if (checkTemproryId) {
-                    setTestSelectId([...testSelectId, { testId: rowData._id }])
-                    setCountCheckBox(countCheckBox + 1);
-                    return null
-                  } // new test insertion 
-                  else {
-                    var temp = testSelectId;
-                    temp[index] = { testId: rowData._id };
-                    setTestSelectId(temp)
-                    setCountCheckBox(countCheckBox + 1);
-                    return null;
-                  } // again upodate code
-                }
-                else {
-                  testSelectId.map((value, i) => {
-                    if (value.testId === rowData._id) {
-                      var temp = testSelectId;
-                      temp[i] = { testId: "" };
-                      setTestSelectId(temp)
-                      setCountCheckBox(countCheckBox - 1);
-                      return null
-                    }
-                  })
-                }
-
-              }} />
+            <h5>{rowData.index}</h5>
           </div>
         )
       }
@@ -249,7 +165,7 @@ const ListAll = (props) => {
       title: 'Test Name', field: 'name', render: (rowData) => {
         return (
           <div>
-            <h4>{rowData.name}</h4>
+            <h5>{rowData.name}</h5>
           </div>
         )
       }
@@ -258,53 +174,33 @@ const ListAll = (props) => {
       title: 'Description', field: 'description', render: (rowData) => {
         return (
           <div>
-            <h4>{rowData.description}</h4>
+            <h5>{rowData.description}</h5>
           </div>
         )
       }
     },
     {
-      title: 'Failed', field: 'failed', render: (rowData) => {
+      title: 'Last Run', field: 'last_run', render: (rowData) => {
         return (
           <div>
-            <h4>{index.index===rowData.index&&!loading?` ${testRun.data.data.pass}/${testRun.data.data.fail}`:"0/0"}</h4>
+            <h5>{rowData.last_run ? moment.utc(rowData.last_run).local().format('D/MM/YYYY hh:mm a') : 'Never Tested'}</h5>
           </div>
         )
       }
     },
     {
-      title: 'Success Rate', field: 'successEate', render: (rowData) => {
-        return (
-          <Box width="100%" display="flex" alignItems="center">
-
-            <Box width="90%" display="flex" marginRight="1%">
-              <Box width={"60%"} bgcolor="green" height={"2vh"}></Box>
-              <Box width={"40%"} bgcolor="red"></Box>
-            </Box>
-            <Typography variant='h5'>
-              60%
-            </Typography>
-          </Box>
-        )
-      }
-    },
-    {
-      title: 'Status', field: 'status', render: (rowData) => {
+      title: 'Status', field: 'is_running', render: (rowData) => {
         return (
           <div>
-            {rowData.status ?
-              <h4 style={{ color: orange[500] }}>
-                {
-                  index.index===rowData.index? !index.status? <CircularProgress color="secondary" />:"complete":"Not Running"
-                  // setIndex({ index: row.index, status:false})
-                }</h4>
-
+            {rowData.is_running ?
+              <Box display={'flex'} flexDirection='row' justifyContent={'center'}>
+                <h5 style={{ color: orange[500] }}> Running </h5>
+                &nbsp; &nbsp;
+                <CircularProgress size={20} variant='indeterminate' style={{ marginTop: '-2' }} />
+              </Box>
               :
-              <h4 style={{ color: green[500] }}>Not Running</h4>
+              <h5 style={{ color: green[500] }}>Idle </h5>
             }
-            {/* setTestRun(response)
-                setIndex({ index: row.index, status: true })
-                setLoading(false) */}
           </div>
         )
       }
@@ -315,35 +211,59 @@ const ListAll = (props) => {
     return new Promise((resolve, reject) => {
       let { page, pageSize, search } = params
       let data = qs.stringify({
-        search: "case",
-        pageSize: pageSize,
+        search,
+        page,
+        pageSize,
         status: 1,
-        page: page,
-        orderBy: 1,
-        orderDirection: 1
+        org_id: org._id
       });
+
       var config = {
         method: 'post',
-        url: 'http://3.21.230.123:3008/api/test',
-        data: data,
+        url: '/test',
+        data: data
       };
 
       Axios(config).then(ans => {
         if (ans.data.status) {
-          setGetAllTestCases(ans.data.data)
+          let runningIds = localStorage.getItem('runningIds');
+          runningIds = runningIds ? JSON.parse(runningIds) : []
+
+          ans.data.data.map(item => {
+            if (runningIds.includes(item._id))
+              item.is_running = true;
+            else
+              item.is_running = false;
+          })
+
           resolve(ans.data.data)
         } else {
           reject(ans.data.message)
         }
       }).catch(e => {
+        console.log(e)
         reject(e)
       })
     })
   }
 
-  const blockCall = (data) => {
+  const editRowClick = async () => {
+    setTimeout(() => {
+      setRowData(selectedRows[0])
+      setShowEdit(true)
+    }, 10);
+  }
+
+  const duplicateRowClick = async () => {
+    setTimeout(() => {
+      setRowData(selectedRows[0])
+      setShowDuplicate(true)
+    }, 10);
+  }
+
+  const deleteCall = (data) => {
     return new Promise((resolve, reject) => {
-      Axios.post(authUser.api_url + '/block-unblock-user', data).then(ans => {
+      Axios.post('/test/delete', data).then(ans => {
         if (ans.data.status) {
           resolve(ans.data.message)
         } else {
@@ -355,32 +275,50 @@ const ListAll = (props) => {
     })
   }
 
-  const editRowClick = async (event, rowData) => {
-    event.preventDefault();
-    setTimeout(() => {
-      setDialogState(prevState => ({ ...prevState, show: true, rowData }))
-      // setDialogState({ show: true, rowData })
-    }, 10);
-  }
-
-  const blockRowClick = async (event, rowData) => {
-    event.preventDefault();
-
+  const deleteRowClick = async (rowData) => {
     MySwal.fire({
       title: 'Are you sure?',
-      text: "Do You Want To " + (rowData.status ? 'Block' : 'Unblock') + " This User",
+      text: "Do You Want To Remove This Test",
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: rowData.status ? 'Yes, Block it !' : 'Yes, Unblock It !',
+      confirmButtonText: 'Yes, Delete it !',
       cancelButtonText: 'No, cancel !',
       reverseButtons: true,
     }).then(async result => {
       if (result.value) {
         try {
-          const result = await blockCall({ user_id: rowData._id, status: !rowData.status })
+          const result = await deleteCall({ test_id: rowData._id })
           MySwal.fire('Success', result, 'success');
-          setDialogState(prevState => ({ ...prevState, refreshData: true }))
+          setRefereshData(true)
         } catch (e) {
+          MySwal.fire('Error', e, 'error');
+        }
+      }
+    });
+  }
+
+  const deleteMultiRow = async () => {
+    MySwal.fire({
+      title: 'Are you sure?',
+      text: "Do You Want To Remove All Selected Tests",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Delete All !',
+      cancelButtonText: 'No, cancel !',
+      reverseButtons: true,
+    }).then(async result => {
+      if (result.value) {
+        try {
+          setBusy(true)
+          let dataRows = selectedRows;
+          for (let x = 0; x < dataRows.length; x++) {
+            await deleteCall({ test_id: dataRows[x]._id })
+            setRefereshData(true)
+          }
+          setBusy(false)
+          MySwal.fire('Success', "Successfully Remove All Selected Tests", 'success');
+        } catch (e) {
+          setBusy(false)
           MySwal.fire('Error', e, 'error');
         }
       }
@@ -395,127 +333,306 @@ const ListAll = (props) => {
   const setMoreOptionsByRowData = (row) => {
     const tempData = [];
     tempData.push(
-      <MenuItem
-        key={"2"}
-        onClick={(e) => {
-          console.log("row data is ", row)
-          var data = qs.stringify({
-            test_id: row._id,
-            browser: 'chrome',
-            org_id: '62f710f8ac8a4a4028a3473f'
-          });
+      <MenuItem onClick={(e) => {
+        handlePopoverClose()
+        setRowData(row)
+        setShowBrowserSelect(true)
+      }}>
+        <PlayArrow /> &nbsp; Run Test
+      </MenuItem>
+    )
 
-          var config = {
-            method: 'post',
-            url: 'http://3.21.230.123:3008/api/test/run',
-            data: data
-          };
-          setIndex({ index: row.index, status:false});
-          setLoading(true)
-          Axios(config)
-            .then(function (response) {
-              if (response.data.status) {
-                setTestRun(response)
-                console.log("api is ", response)
-                setIndex({ index: row.index, status: true })
-                setLoading(false)
-              }
-              else {
-                // setIndex({ index: row.index, status: false })
-                MySwal.fire('Error', response.data.message, 'error');
-                setLoading(false)
-              }
-            })
-            .catch(function (error) {
-              setIndex({ index: row.index, status: true })
-              console.log("erroe",error);
-              setLoading(false)
-            });
-          handlePopoverClose()
-        }}>
-        <PlayArrow style={{ color: "green" }} /> &nbsp; Run Test
+    tempData.push(
+      <MenuItem onClick={(e) => {
+        handlePopoverClose()
+        setRowData(row)
+        setShowDuplicate(true)
+      }}>
+        <FileCopy /> &nbsp; Duplicate
       </MenuItem>
     )
     tempData.push(
-      <MenuItem
-        key={"3"}
-        onClick={(e) => {
-          handlePopoverClose()
-          setRowData(row)
-          setDeleteTest(true)
-        }}>
-        <Delete style={{ color: "red" }} /> &nbsp; Delete
+      <MenuItem onClick={(e) => {
+        handlePopoverClose()
+        editRowClick(row)
+      }}>
+        <Edit /> &nbsp; Edit
       </MenuItem>
     )
     tempData.push(
-      <MenuItem
-        key={"4"}
-        onClick={(e) => {
-          handlePopoverClose()
-          setRowData(row)
-          setShowDuplicate(true)
-        }}>
-        <FileCopy style={{ color: "black" }} /> &nbsp; Duplicate
+      <MenuItem onClick={(e) => {
+        handlePopoverClose()
+        deleteRowClick(row)
+      }}>
+        <Delete /> &nbsp; Delete
       </MenuItem>
     )
+
     tempData.push(
-      <MenuItem
-        key={"5"}
-        onClick={(e) => {
-          handlePopoverClose()
-          setRowData(row)
-          setEditTest(true)
-        }}>
-        <Edit style={{ color: "black" }} /> &nbsp; Edit
+      <MenuItem onClick={(e) => {
+        handlePopoverClose()
+        showMessage('warning', 'Under Development');
+      }}>
+        <ControlPointDuplicate /> &nbsp; Update Group
       </MenuItem>
     )
-    tempData.push(
-      <MenuItem
-        key={"6"}
-        onClick={(e) => {
-          handlePopoverClose()
-          showMessage('warning', 'Under Development');
-        }}>
-        <ControlPointDuplicate style={{ color: "black" }} /> &nbsp; Update Group
-      </MenuItem>
-    )
-    tempData.push(
-      <MenuItem
-        key={"8"}
-        onClick={(e) => {
-          handlePopoverClose()
-          showMessage('warning', 'Under Development');
-        }}>
-        <BackupIcon style={{ color: "black" }} /> &nbsp; Upload
-      </MenuItem>
-    )
-    tempData.push(
-      <MenuItem
-        key={"7"}
-        onClick={(e) => {
-          handlePopoverClose()
-          showMessage('warning', 'Under Development');
-        }}>
-        <GetAppIcon style={{ color: "black" }} /> &nbsp; Download
-      </MenuItem>
-    )
-    tempData.push(
-      <MenuItem
-        key={"8s"}
-        onClick={(e) => {
-          handlePopoverClose()
-          showMessage('warning', 'Under Development');
-        }}>
-        <BurstModeIcon style={{ color: "black" }} /> &nbsp; Test Results
-      </MenuItem>
-    )
+
     setMoreOptions(tempData);
   }
-
 
   const handlePopoverClose = () => {
     setAnchorEl(null);
   };
+
+  const testRunApi = (params) => {
+    return new Promise((resolve, reject) => {
+      let { test_id, browser } = params
+      let data = qs.stringify({
+        test_id,
+        browser,
+        org_id: org._id
+      });
+
+      var config = {
+        method: 'post',
+        url: '/test/run',
+        data: data
+      };
+
+      Axios(config).then(ans => {
+        if (ans.data.status) {
+          resolve(true)
+        } else {
+          reject(ans.data.message)
+        }
+      }).catch(e => {
+        console.log(e)
+        reject(e)
+      })
+    })
+  }
+
+  const testRunCall = async (browser) => {
+
+    let row = selectedRows[0];
+    let runningIds = localStorage.getItem('runningIds');
+    runningIds = runningIds ? JSON.parse(runningIds) : []
+
+    try {
+      if (!runningIds.includes(row._id)) {
+        runningIds.push(row._id);
+        localStorage.setItem('runningIds', JSON.stringify(runningIds))
+        setRefereshData(true)
+        let params = {
+          test_id: row._id,
+          browser
+        }
+        await testRunApi(params)
+        runningIds = localStorage.getItem('runningIds');
+        runningIds = runningIds ? JSON.parse(runningIds) : []
+        localStorage.setItem('runningIds', JSON.stringify(runningIds.filter(e => e != row._id)))
+        setTimeout(() => {
+          setRefereshData(true)
+        }, 500);
+      }
+    } catch (e) {
+      runningIds = localStorage.getItem('runningIds');
+      runningIds = runningIds ? JSON.parse(runningIds) : []
+      localStorage.setItem('runningIds', JSON.stringify(runningIds.filter(e => e != row._id)))
+      setTimeout(() => {
+        setRefereshData(true)
+      }, 500);
+      showMessage('error', e, 'error')
+    }
+  }
+
+  const testRunSync = (params) => {
+    return new Promise((resolve, reject) => {
+      let { test_id, browser } = params
+      let data = qs.stringify({
+        test_id,
+        browser,
+        org_id: org._id
+      });
+
+      var config = {
+        method: 'post',
+        url: '/test/bulk-run',
+        data: data
+      };
+
+      Axios(config).then(ans => {
+        if (ans.data.status) {
+          resolve(true)
+        } else {
+          reject(ans.data.message)
+        }
+      }).catch(e => {
+        console.log(e)
+        reject(e)
+      })
+    })
+  }
+
+  const testRunAsync = (params) => {
+    return new Promise((resolve, reject) => {
+      let { test_id, browser } = params
+      let data = qs.stringify({
+        test_id,
+        browser,
+        org_id: org._id
+      });
+
+      var config = {
+        method: 'post',
+        url: '/test/bulk-run-concurrent',
+        data: data
+      };
+
+      Axios(config).then(ans => {
+        if (ans.data.status) {
+          resolve(ans.data.data)
+        } else {
+          reject(ans.data.message)
+        }
+      }).catch(e => {
+        console.log(e)
+        reject(e)
+      })
+    })
+  }
+
+  const testRunCallMulti = async (browser, type) => {
+
+    let runningIds = localStorage.getItem('runningIds');
+    runningIds = runningIds ? JSON.parse(runningIds) : []
+    let idsToRun = [];
+    try {
+      for (let x = 0; x < selectedRows.length; x++) {
+        idsToRun.push(selectedRows[x]._id)
+      }
+
+      idsToRun = idsToRun.filter(id => !runningIds.includes(id))
+      runningIds = idsToRun.concat(runningIds);
+      localStorage.setItem('runningIds', JSON.stringify(runningIds))
+      setRefereshData(true)
+
+      let params = {
+        test_id: idsToRun.join(","),
+        browser
+      }
+
+      if (type == 1) {
+        await testRunSync(params)
+        runningIds = localStorage.getItem('runningIds');
+        runningIds = runningIds ? JSON.parse(runningIds) : []
+        runningIds = idsToRun.filter(id => !runningIds.includes(id));
+        localStorage.setItem('runningIds', JSON.stringify(runningIds))
+        setTimeout(() => {
+          setRefereshData(true)
+        }, 500);
+
+      } else {
+        let remoteIds = await testRunAsync(params)
+        localStorage.setItem('asyncIds', JSON.stringify(remoteIds))
+        setTimeout(() => {
+          setRefereshData(true);
+          if (checkingAsync)
+            setCheckingAsync(false);
+        }, 500);
+      }
+    } catch (e) {
+      runningIds = localStorage.getItem('runningIds');
+      runningIds = runningIds ? JSON.parse(runningIds) : []
+      runningIds = idsToRun.filter(id => !runningIds.includes(id));
+      localStorage.setItem('runningIds', JSON.stringify(runningIds))
+      setTimeout(() => {
+        setRefereshData(true)
+      }, 500);
+      showMessage('error', e, 'error')
+    }
+  }
+
+  const checkTestApi = (params) => {
+    return new Promise((resolve, reject) => {
+      let { id } = params
+      let data = qs.stringify({
+        id
+      });
+
+      var config = {
+        method: 'post',
+        url: '/test/test-status',
+        data: data
+      };
+
+      Axios(config).then(ans => {
+        if (ans.data.status) {
+          resolve(ans.data.code)
+        } else {
+          reject(ans.data.message)
+        }
+      }).catch(e => {
+        console.log(e)
+        reject(e)
+      })
+    })
+  }
+
+  const checkTests = async () => {
+    try {
+
+
+      let asyncIds = localStorage.getItem('asyncIds');
+      asyncIds = asyncIds ? JSON.parse(asyncIds) : []
+      if (asyncIds.length > 0) {
+        for (let x = 0; x < asyncIds.length; x++) {
+          let id = asyncIds[x];
+          try {
+            let code = await checkTestApi({ id });
+            if (Number(code) === 2) {
+              let runningIds = localStorage.getItem('runningIds');
+              runningIds = runningIds ? JSON.parse(runningIds) : []
+              let testId = id.split("_")[1];
+              runningIds = runningIds.filter(id => id !== testId);
+              localStorage.setItem('runningIds', JSON.stringify(runningIds))
+              localStorage.setItem('asyncIds', JSON.stringify(asyncIds.filter(element => element !== id)))
+              setTimeout(() => {
+                setRefereshData(true)
+              }, 500);
+            }
+          } catch (error) {
+            alert(error)
+            let runningIds = localStorage.getItem('runningIds');
+            runningIds = runningIds ? JSON.parse(runningIds) : []
+            let testId = id.split("_")[1];
+            runningIds = runningIds.filter(id => id !== testId);
+            localStorage.setItem('runningIds', JSON.stringify(runningIds))
+            localStorage.setItem('asyncIds', JSON.stringify(asyncIds.filter(element => element !== id)))
+            setTimeout(() => {
+              setRefereshData(true)
+            }, 500);
+          }
+        }
+        setTimeout(() => {
+          checkTests();
+        }, 2000);
+      }
+    } catch (error) {
+
+    }
+  }
+
+  if (!checkingAsync) {
+    checkTests();
+    setCheckingAsync(true)
+  }
+
+  useEffect(() => {
+    localStorage.removeItem('runningIds');
+    localStorage.removeItem('asyncIds');
+    tableRef.current.onQueryChange()
+  }, [org])
 
   const actions = [
     row => (
@@ -523,7 +640,8 @@ const ListAll = (props) => {
         icon: () => <MoreVert style={{ color: blue[500] }} />,
         className: classes.actionBlueButton,
         tooltip: 'Show More Options',
-        onClick: handlePopoverOpen
+        onClick: handlePopoverOpen,
+        hidden: row.is_running || busy
       }
     ),
   ]
@@ -531,11 +649,13 @@ const ListAll = (props) => {
   if (dialogState.refreshData) {
     tableRef.current.onQueryChange()
     setDialogState(prevState => ({ ...prevState, refreshData: false }))
+    setSelectedRows([])
   }
 
   if (refereshData) {
     tableRef.current.onQueryChange()
     setRefereshData(false);
+    setSelectedRows([])
   }
 
   const showMessage = (icon, text) => {
@@ -548,39 +668,100 @@ const ListAll = (props) => {
   return (
     <div>
       <PageContainer heading="" breadcrumbs={breadcrumbs}>
-        <Box display="flex" width="100%" height="8vh" justifyContent={countCheckBox > 1 ? "" : "end"} lineHeight="1.5">
-          {
-            countCheckBox > 1 &&
-            <Box bgcolor="white" height="6vh" width="20%" display="flex" justifyContent="center" alignItems="center" lineHeight="40px">
-              <PlayArrow style={{ color: "green", cursor: "pointer" }} />
-              <Edit style={{ color: "black", marginRight: "8%", marginLeft: "8%", cursor: "pointer" }} />
-              <FileCopy style={{ color: "black", cursor: "pointer" }} />
-            </Box>
-          }
-          <Box width="80%" display='flex' flexDirection='row' justifyContent='end'>
-            <Button type='button' variant="contained" style={{ height: "6vh" }} color="primary" onClick={() => { setShowCreateDial(true) }}>
-              Create New Test
-            </Button>
+        <br />
+        <div className={'container max-width-adaptive-sm Scroll reveal effects'} style={{ marginTop: "-6%" }}>
+          <Box display='flex' flexDirection='row' justifyContent='end' className='reveal-fx reveal-fx--translate-up' >
+            {selectedRows.length > 0 &&
+              <Fade bottom opposite cascade >
+                &nbsp;&nbsp;
+                <Tooltip
+                  title={"Run Test"}
+                >
+                  <Fab size="small" color="default" aria-label="add" onClick={() => {
+                    if (selectedRows.length == 1) {
+                      setRowData(selectedRows[0])
+                      setShowBrowserSelect(true)
+                    } else {
+                      setShowMultiRun(true)
+                    }
+                  }} disabled={busy}>
+                    <PlayArrow />
+                  </Fab>
+                </Tooltip>
+                &nbsp;&nbsp;
+              </Fade>
+            }
+
+            {selectedRows.length === 1 &&
+              <Fade bottom opposite cascade >
+                &nbsp;&nbsp;
+                <Tooltip
+                  title={"Edit"}
+                >
+                  <Fab size="small" color="default" aria-label="add" onClick={editRowClick} disabled={busy}>
+                    <Edit />
+                  </Fab>
+                </Tooltip>
+                &nbsp;&nbsp;
+              </Fade>
+            }
+
+            {selectedRows.length === 1 &&
+              <Fade bottom opposite cascade >
+                &nbsp;&nbsp;
+                <Tooltip
+                  title={"Duplicate"}
+                >
+                  <Fab size="small" color="default" aria-label="add" onClick={duplicateRowClick} disabled={busy}>
+                    <FileCopy />
+                  </Fab>
+                </Tooltip>
+                &nbsp;&nbsp;
+              </Fade>
+            }
+
+            {selectedRows.length > 0 &&
+              <Fade bottom opposite cascade>
+                &nbsp;&nbsp;
+                <Tooltip
+                  title={"Delete"}
+                >
+                  <Fab size="small" color="default" aria-label="add" onClick={deleteMultiRow} disabled={busy}>
+                    <Delete />
+                  </Fab>
+                </Tooltip>
+                &nbsp;&nbsp;
+              </Fade>
+            }
+            &nbsp;&nbsp;
+            <Tooltip
+              title={"Create New Test"}
+            >
+              <Fab size="small" color="default" aria-label="add" onClick={() => { setShowCreateDial(true) }} disabled={busy}>
+                <Add />
+              </Fab>
+            </Tooltip>
           </Box>
-        </Box>
+        </div>
+        <br />
         <MaterialTable
           tableRef={tableRef}
           icons={tableIcons}
+          title="Tests List"
           columns={columns}
-          actions={actions}
-          title="Group"
+          onSelectionChange={(rows) => {
+            setSelectedRows(rows);
+          }}
+          // actions={actions}
           data={async (query) => {
-            // querry data is option data 
             try {
               var { orderBy, orderDirection, page, pageSize, search } = query;
               const data = await getData({ orderBy: orderBy ? orderBy.field : null, orderDirection, page: (page + 1), pageSize, search });
-
-
               return new Promise((resolve, reject) => {
                 resolve({
-                  data: data,
+                  data,
                   page: query.page,
-                  totalCount: data.count //? state.totalAssociations : 5//state.totalAssociations
+                  totalCount: data.length //? state.totalAssociations : 5//state.totalAssociations
                 })
               })
             } catch (e) {
@@ -592,12 +773,19 @@ const ListAll = (props) => {
                 })
               })
             }
-          }
-          }
+          }}
           page={1}
 
           options={{
-            actionsColumnIndex: -1,
+            selectionProps: (rowData) => {
+              let runningIds = localStorage.getItem('runningIds');
+              runningIds = runningIds ? JSON.parse(runningIds) : []
+              let disabled = runningIds.includes(rowData._id)
+              return ({ disabled })
+            },
+            // actionsColumnIndex: -1,
+            selection: true,
+            showSelectAllCheckbox: true,
             draggable: false,
             sorting: false,
             headerStyle: {
@@ -605,12 +793,11 @@ const ListAll = (props) => {
               color: '#fff'
             },
             cellStyle: {
-              hover: blue[500],
-              Text: "center"
+              hover: blue[500]
             },
             rowStyle: (rowData, index) => ({
-              backgroundColor: (index % 2 === 0) ? grey[50] : '#FFF', textAlign: "center"
-              // padding:
+              backgroundColor: (selectedRows.includes(rowData)) ? '#EEE' : '#FFF',
+              padding: 10
             }),
             exportMenu: [{
               label: 'Export PDF',
@@ -620,92 +807,46 @@ const ListAll = (props) => {
               exportFunc: (cols, datas) => ExportCsv(cols, datas, 'List All Users ' + moment().format('DD-MM-YYYY'))
             }],
             showFirstLastPageButtons: true,
-            pageSize: 10,
+            pageSize: 20,
             padding: 'default',
-            pageSizeOptions: [10, 20, 50, 100],
+            pageSizeOptions: [20, 50, 100],
           }}
         />
-        {/* open state is used for action items ( clone test, edit test etc ) and open is array that have assigng thr tempData [] array*/}
-        {open && (
-          <Popover
-            open={open}
-            anchorEl={anchorEl}
-            container={anchorEl}
-            onClose={handlePopoverClose}
-            anchorOrigin={{
-              vertical: 'center',
-              horizontal: 'right',
-            }}
-            transformOrigin={{
-              vertical: 'center',
-              horizontal: 'right',
-            }}>
-            <Paper elevation={8}>
-              <MenuList>
-                {moreOptions}
-              </MenuList>
-            </Paper>
-          </Popover>
-        )}   {/* open state is used for action items ( clone test, edit test etc ) and open is array that have assigng thr tempData [] array*/}
 
-        {deleteTest &&
-          <Dialog open={true} maxWidth="sm" fullWidth>
-            <DialogTitle>
-              <br />
-
-              <Backdrop className={classes.backdrop} open={loading}>
-                <CircularProgress color="secondary" />
-              </Backdrop>
-              <Box style={{ textAlign: "center" }}><Typography variant="h6">Do You Want To Delete Test Record</Typography></Box>
-            </DialogTitle>
-            <Box position="absolute" top={0} right={0}>
-              <IconButton>
-                <Close onClick={() => { setDeleteTest(false) }} />
-              </IconButton>
-            </Box>
-            <DialogContent>
-              <br />
-            </DialogContent>
-            <DialogActions style={{ marginBottom: "2%", marginRight: "37%" }}>
-              <Button onClick={() => { setDeleteTest(false) }} style={{ marginRight: "2%", }} color="primary" variant="contained">
-                NO
-              </Button>
-              <Button onClick={() => {
-                var data = qs.stringify({
-                  test_id: rowData._id
-                });
-
-                var config = {
-                  method: 'post',
-                  url: 'http://3.21.230.123:3008/api/test/delete',
-                  data: data
-                };
-
-                setLoading(true);
-                Axios(config).then((data) => {
-                  setLoading(false);
-                  setDeleteTest(false)
-                  setRefereshData(true)
-                  showMessage('success');
-                }).catch((error) => {
-                  setLoading(false);
-                  setDeleteTest(false)
-                })
-
+        {
+          open && (
+            <Popover
+              open={open}
+              anchorEl={anchorEl}
+              container={anchorEl}
+              onClose={handlePopoverClose}
+              anchorOrigin={{
+                vertical: 'center',
+                horizontal: 'right',
               }}
-                color="secondary" variant="contained">
-                YES
-              </Button>
-            </DialogActions>
-          </Dialog>}
-        {/* runAllTest */}
+              transformOrigin={{
+                vertical: 'center',
+                horizontal: 'right',
+              }}>
+              <Paper elevation={8}>
+                <MenuList>
+                  {moreOptions}
+                </MenuList>
+              </Paper>
+            </Popover>
+          )
+        }
+
         {showCreateDial && <AddNew hideDialog={setShowCreateDial} setRefereshData={setRefereshData} />}
-        {showDuplicate && <Duplicate name="clone" hideDialog={setShowDuplicate} setRefereshData={setRefereshData} rowData={rowData} />}   {/* for clone test */}
-        {editTest && <Duplicate name="edit" hideDialog={setEditTest} setRefereshData={setRefereshData} rowData={rowData} />}
-      </PageContainer>
-    </div>
+        {showDuplicate && <Duplicate hideDialog={setShowDuplicate} setRefereshData={setRefereshData} rowData={rowData} />}
+        {showEdit && <EditDialog hideDialog={setShowEdit} setRefereshData={setRefereshData} rowData={rowData} />}
+        {showBrowserSelect && <BrowserSelect showDialog={setShowBrowserSelect} testRunCall={testRunCall} />}
+        {showMultiRun && <MultiRun showDialog={setShowMultiRun} testRunCall={testRunCallMulti} />}
+
+      </PageContainer >
+      {/* } */}
+    </div >
   );
 };
 
 export default (withStyles({}, { withTheme: true })(ListAll));
-

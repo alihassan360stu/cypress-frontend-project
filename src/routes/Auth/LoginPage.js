@@ -11,7 +11,7 @@ import CmtImage from '@coremat/CmtImage';
 import { CurrentAuthMethod } from '@jumbo/constants/AppConstants';
 import AuthWrapper from './AuthWrapper';
 import GridContainer from '@jumbo/components/GridContainer';
-import { fetchError } from '@redux/actions';
+import { fetchError, setSelectedOrg } from '@redux/actions';
 
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
@@ -76,6 +76,8 @@ const SignIn = ({ method = CurrentAuthMethod, variant = 'default', wrapperVarian
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { authUser } = useSelector(({ auth }) => auth);
+  const orgs = useSelector(({ orgs }) => orgs);
+  const org = useSelector(({ org }) => org);
   const location = useLocation();
   const history = useHistory();
 
@@ -98,10 +100,20 @@ const SignIn = ({ method = CurrentAuthMethod, variant = 'default', wrapperVarian
     var search = window.location.search;
     var params = new URLSearchParams(search);
     var redirectUrl = params.get('action_url');
-    if (redirectUrl) {
-      history.push(redirectUrl);
-    } else {
-      history.push('/app/dashboard');
+    if (orgs) {
+      if (orgs.length < 1) {
+        history.push('/app/orgs');
+      } else {
+        if (!org) {
+          dispatch(setSelectedOrg(orgs[0]));
+          localStorage.setItem('cypress_selected_org_1001', JSON.stringify(orgs[0]));
+        }
+        if (redirectUrl) {
+          history.push(redirectUrl);
+        } else {
+          history.push('/app/dashboard');
+        }
+      }
     }
   }
 
@@ -109,14 +121,9 @@ const SignIn = ({ method = CurrentAuthMethod, variant = 'default', wrapperVarian
     <AuthWrapper variant={wrapperVariant}>
       <Box className={classes.authContent}>
         <GridContainer justifyContent="center" alignItems="center">
-          <Box mb={10} display='flex' flexDirection={'column'} alignItems='center'>
-            <CmtImage src={'/logo.png'} className='login-logo' style={{ height: '100px' }} />
-            <Box className={classes.errorNumber} fontSize={{ xs: 20, sm: 20 }}>
-              Welcome To
-            </Box>
-            <Box className={classes.errorNumber} fontSize={{ xs: 30, sm: 30 }}>
-              AUTON8
-            </Box>
+          <Box mb={10} mt={5} display='flex' flexDirection={'column'} alignItems='center'>
+            <Typography variant='h2'> Welcome To </Typography>
+            <CmtImage src={'/images/new_logo.png'} className='login-logo' style={{ height: '50px' }} />
           </Box>
         </GridContainer>
         <Typography component="div" variant="h1" className={classes.titleRoot}>

@@ -26,11 +26,8 @@ const AxiosInterceptor = ({ ...props }) => {
 
 
     // SERVICE_URL = window.location.origin + '/api/';
-    SERVICE_URL = 'http://3.21.230.123:3008' + '/api/';
-    http://localhost:3008
+    SERVICE_URL = 'http://localhost:3008' + '/api/';
     // }
-
-    // SERVICE_URL = 'http://localhost:3008' + '/api/';
 
     axios.defaults.baseURL = SERVICE_URL;
     // axios.defaults.baseURL = 'http://localhost:8000/api';

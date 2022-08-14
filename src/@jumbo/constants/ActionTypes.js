@@ -86,3 +86,8 @@ export const DELETE_BULK_USERS = 'DELETE_BULK_USERS';
 
 // export const GET_PERMISSIONS = 'GET_PERMISSIONS'
 export const SET_PERMISSIONS = 'SET_PERMISSIONS';
+
+// Organizations
+export const SET_ORGS = 'SET_ORGS';
+export const UPDATE_ORGS = 'UPDATE_ORGS';
+export const UPDATE_SELECTED_ORG = 'UPDATE_SELECTED_ORG';

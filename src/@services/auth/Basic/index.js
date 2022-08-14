@@ -1,15 +1,10 @@
-import { fetchError, fetchStart, fetchSuccess } from '@redux/actions';
+import { fetchError, fetchStart, fetchSuccess, setOrganizations, setSelectedOrg } from '@redux/actions';
 import { setAuthUser, updateLoadUser } from '@redux/actions/Auth';
 import axios from 'axios';
 
 import moment from 'moment';
 var CryptoJS = require('crypto-js');
 const MKV = 'L#2Qe2vQNs$)Rdl*Cd(!';
-// const availableRoles = ['Admin', 'Association', 'Shopkeeper', 'Company', 'Hotel']
-const availableRoles = [
-  'Administrator'
-];
-const baseUrls = { Administrator: 'admin' };
 
 const BasicAuth = {
   onLogin: (data) => {
@@ -21,6 +16,16 @@ const BasicAuth = {
         var ciphertext = CryptoJS.AES.encrypt(JSON.stringify(user), MKV).toString();
         localStorage.setItem('cypress_user_1001', ciphertext);
         dispatch(setAuthUser(user));
+        if (user) {
+          if (user.organization) {
+            dispatch(setOrganizations(user.organization));
+            if (user.organization.length > 0) {
+              dispatch(setSelectedOrg(user.organization[0]))
+            }
+          } else {
+            dispatch(setOrganizations([]));
+          }
+        }
         dispatch(fetchSuccess());
       } catch (error) {
         dispatch(fetchSuccess());
@@ -37,6 +42,16 @@ const BasicAuth = {
         var ciphertext = CryptoJS.AES.encrypt(JSON.stringify(user), MKV).toString();
         localStorage.setItem('cypress_user_1001', ciphertext);
         dispatch(setAuthUser(user));
+        if (user) {
+          if (user.organization) {
+            dispatch(setOrganizations(user.organization));
+            if (user.organization.length > 0) {
+              dispatch(setSelectedOrg(user.organization[0]))
+            }
+          } else {
+            dispatch(setOrganizations([]));
+          }
+        }
         dispatch(fetchSuccess());
       } catch (error) {
         dispatch(fetchSuccess());
@@ -47,10 +62,11 @@ const BasicAuth = {
   onLogout: () => {
     return dispatch => {
       dispatch(fetchStart());
-
       setTimeout(() => {
         localStorage.removeItem('cypress_user_1001');
+        localStorage.removeItem('cypress_selected_org_1001');
         dispatch(setAuthUser(null));
+        dispatch(setOrganizations([]));
         dispatch(fetchSuccess());
         window.location.reload();
       }, 300);
@@ -59,6 +75,8 @@ const BasicAuth = {
 
   getAuthUser: (loaded = false) => {
     var iTem = localStorage.getItem('cypress_user_1001');
+    var selectedOrg = localStorage.getItem('cypress_selected_org_1001');
+
     var bytes = iTem ? CryptoJS.AES.decrypt(iTem, MKV).toString(CryptoJS.enc.Utf8) : null;
     var user = bytes ? JSON.parse(bytes) : null;
 
@@ -67,12 +85,23 @@ const BasicAuth = {
       if (validate.isExpired) {
         user = null;
       }
+    } else {
+      user = null;
     }
 
     return dispatch => {
       dispatch(fetchStart());
       dispatch(updateLoadUser(loaded));
+      if (selectedOrg) {
+        selectedOrg = JSON.parse(selectedOrg);
+        dispatch(setSelectedOrg(selectedOrg));
+      } else {
+        dispatch(setSelectedOrg(null));
+      }
+
       dispatch(setAuthUser(user));
+      if (user)
+        dispatch(setOrganizations(user.organization ? user.organization : []));
       dispatch(fetchSuccess());
     };
   },

@@ -30,25 +30,25 @@ const Logo = ({ color, ...props }) => {
 
   // const logoUrl = color === 'white' ? '/images/logo-white.png' : '/images/logo.png';
   const logoUrl = '/logo_header.png';
-  const logoSymbolUrl = '/images/logo_footer.png';
+  const logoA8 = '/images/A8.png';
   // const logoSymbolUrl = color === 'white' ? '/images/logo-white-symbol.png' : '/images/logo-symbol.png';
- 
+
   return (
     <Box className="pointer" {...props}>
       <GridContainer justifyContent="center" alignItems="center">
+        <Box fontSize={{ xs: 20, sm: 30, }}>
+          AUTON
+        </Box>
         <Hidden xsDown>
           <NavLink to="/">
-            <CmtImage src={logoUrl} alt="logo" style={{height:'40px'}}/>
+            <CmtImage src={logoA8} alt="logo" style={{ height: '40px', marginTop: '5px' }} />
           </NavLink>
         </Hidden>
         <Hidden smUp>
           <NavLink to="/">
-            <CmtImage src={logoUrl} alt="logo" style={{height:'40px'}}/>
+            <CmtImage src={logoA8} alt="logo" style={{ height: '40px', marginTop: '5px' }} />
           </NavLink>
         </Hidden>
-        <Box fontSize={{ xs: 20, sm: 40, }} className={classes.errorNumber}>
-          AUTON 8
-        </Box>
       </GridContainer>
     </Box>
   );

@@ -31,7 +31,7 @@ const Footer = props => {
           <FooterLogo mr={5} color={themeType === THEME_TYPES.DARK ? 'white' : ''} />
         </Hidden>
         <Box fontSize={{ xs: 12, sm: 14 }} component="p" color="text.disabled">
-          Copyright Cypress © {date.getFullYear()}
+          Copyright AUTON8 © {date.getFullYear()}
         </Box>
       </Box>
     </Box>

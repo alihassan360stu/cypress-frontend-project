@@ -1,10 +1,6 @@
-import { SET_PERMISSIONS } from '../../@jumbo/constants/ActionTypes';
+import { SET_PERMISSIONS } from '@jumbo/constants/ActionTypes';
 
 const INIT_STATE = {
-  // initialURL: '/',
-  // error: '',
-  // message: '',
-  // loading: false,
 };
 
 export default (state = INIT_STATE, action) => {

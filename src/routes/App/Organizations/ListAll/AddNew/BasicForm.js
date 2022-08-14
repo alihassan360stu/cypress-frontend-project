@@ -10,14 +10,13 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-
 const BasicForm = ({ state, handleOnChangeTF }) => {
     const classes = useStyles();
     return (
         <div>
             <TextField
                 type="text"
-                label={'Test Name'}
+                label={'Org Name'}
                 name="name"
                 fullWidth
                 onChange={handleOnChangeTF}
@@ -28,7 +27,21 @@ const BasicForm = ({ state, handleOnChangeTF }) => {
                 className={classes.textFieldRoot}
                 disabled={state.is_loading}
             />
+            <TextField
+                type="text"
+                label={'Description'}
+                fullWidth
+                name="description"
+                value={state.description}
+                margin="normal"
+                variant="outlined"
+                required
+                className={classes.textFieldRoot}
+                onChange={handleOnChangeTF}
+                disabled={state.is_loading}
+            />
         </div >
+
     );
 };
 

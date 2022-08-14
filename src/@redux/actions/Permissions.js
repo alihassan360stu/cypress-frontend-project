@@ -1,4 +1,4 @@
-import { SET_PERMISSIONS } from '../../@jumbo/constants/ActionTypes';
+import { SET_PERMISSIONS } from '@jumbo/constants/ActionTypes';
 
 export const setPermissions = permissions => {
   return dispatch => {

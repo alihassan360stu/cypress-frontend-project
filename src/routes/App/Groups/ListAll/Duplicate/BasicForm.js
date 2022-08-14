@@ -17,7 +17,7 @@ const BasicForm = ({ state, handleOnChangeTF }) => {
         <div>
             <TextField
                 type="text"
-                label={'Group Name'}
+                label={'Test Name'}
                 name="name"
                 fullWidth
                 onChange={handleOnChangeTF}
@@ -28,21 +28,7 @@ const BasicForm = ({ state, handleOnChangeTF }) => {
                 className={classes.textFieldRoot}
                 disabled={state.is_loading}
             />
-            <TextField
-                type="text"
-                label={'Group Description'}
-                fullWidth
-                name="description"
-                value={state.description}
-                margin="normal"
-                variant="outlined"
-                required
-                className={classes.textFieldRoot}
-                onChange={handleOnChangeTF}
-                disabled={state.is_loading}
-            />
         </div >
-
     );
 };
 

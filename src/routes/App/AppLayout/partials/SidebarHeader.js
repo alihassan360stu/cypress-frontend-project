@@ -1,13 +1,9 @@
 import React, { useContext } from 'react';
-import { MenuItem, MenuList, Paper, Popover, Typography } from '@material-ui/core';
+import { Typography } from '@material-ui/core';
 import CmtAvatar from '@coremat/CmtAvatar';
-import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import { useDispatch, useSelector } from 'react-redux';
-import { AuhMethods } from '@services/auth';
-import ExitToAppIcon from '@material-ui/icons/ExitToApp';
 import SidebarThemeContext from '@coremat/CmtLayouts/SidebarThemeContext/SidebarThemeContext';
-import { CurrentAuthMethod } from '@jumbo/constants/AppConstants';
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -28,7 +24,6 @@ const useStyles = makeStyles(theme => ({
   },
   userTitle: {
     color: props => props.sidebarTheme.textDarkColor,
-    marginBottom: 8,
   },
   userSubTitle: {
     fontSize: 14,
@@ -40,85 +35,53 @@ const useStyles = makeStyles(theme => ({
 const SidebarHeader = () => {
   const { sidebarTheme } = useContext(SidebarThemeContext);
   const { authUser } = useSelector(({ auth }) => auth);
-
+  const org = useSelector(({ org }) => org);
   const classes = useStyles({ sidebarTheme });
-  const dispatch = useDispatch();
-
-  const [anchorEl, setAnchorEl] = React.useState(null);
-
-  const handlePopoverOpen = event => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handlePopoverClose = () => {
-    setAnchorEl(null);
-  };
-
-  const open = Boolean(anchorEl);
- 
-  const onLogoutClick = () => {
-    handlePopoverClose();
-    dispatch(AuhMethods[CurrentAuthMethod].onLogout());
-  };
 
   return (
     <div className={classes.root}>
       {/* <CmtAvatar src={'https://via.placeholder.com/150'} alt="User Avatar" /> */}
+      <div
+        style={{
+          display: 'flex',
+          width: '100%',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}>
+        <CmtAvatar color="primary" size={75} variant="circular" alt="avatar" src="/images/default.jpg" />
 
-      <CmtAvatar color="primary" size={75} variant="circular" alt="avatar" src="/images/default.jpg" />
-      {/* ["amber","brown","orange","purple","primary","red","green","blue","grey","yellow","secondary","random"]. */}
-
-      <div className={classes.userInfo} onClick={handlePopoverOpen}>
-        <div
-          className="pointer"
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-end',
-          }}>
-          <div className="mr-2">
-            
-            <Typography className={classes.userTitle} component="h3" variant="h6">
-              {authUser.full_name} (Administrator)
-            </Typography>
-            <Typography className={classes.userSubTitle}>  {authUser.email}</Typography>
+        <div className={classes.userInfo}>
+          <div>
+            <div className="mr-2" style={{
+              display: 'flex',
+              width: '100%',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}>
+              <Typography className={classes.userSubTitle}>{authUser.full_name}</Typography>
+            </div>
+            {org &&
+              <div
+                style={{
+                  display: 'flex',
+                  width: '100%',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                }}>
+                <div className="mr-2">
+                  <Typography className={classes.userSubTitle}>Selected Orgnaization</Typography>
+                </div>
+                <div className="mr-2">
+                  <Typography className={classes.userSubTitle}>{org.name}</Typography>
+                </div>
+              </div>
+            }
           </div>
-          <ArrowDropDownIcon />
         </div>
       </div>
+      {/* ["amber","brown","orange","purple","primary","red","green","blue","grey","yellow","secondary","random"]. */}
 
-      {open && (
-        <Popover
-          open={open}
-          anchorEl={anchorEl}
-          container={anchorEl}
-          onClose={handlePopoverClose}
-          anchorOrigin={{
-            vertical: 'center',
-            horizontal: 'right',
-          }}
-          transformOrigin={{
-            vertical: 'center',
-            horizontal: 'right',
-          }}>
-          <Paper elevation={8}>
-            <MenuList>
-              {/* <MenuItem onClick={handlePopoverClose}>
-                <PersonIcon />
-                <div className="ml-2">Profile</div>
-              </MenuItem>
-              <MenuItem onClick={handlePopoverClose}>
-                <SettingsIcon />
-                <div className="ml-2">Settings</div>
-              </MenuItem> */}
-              <MenuItem onClick={onLogoutClick}>
-                <ExitToAppIcon />
-                <div className="ml-2">Logout</div>
-              </MenuItem>
-            </MenuList>
-          </Paper>
-        </Popover>
-      )}
+
     </div>
   );
 };

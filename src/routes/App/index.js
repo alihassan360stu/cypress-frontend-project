@@ -1,33 +1,46 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { Redirect, Route, Switch, withRouter } from 'react-router';
 import PageLoader from '@jumbo/components/PageComponents/PageLoader';
 import AppLayout from './AppLayout';
 import Dashboard from './Dashboard'
 import { AddTest, ListTests } from './Tests'
-import { AddGroup, ListGroups } from './Groups'
+import { ListOrgs } from './Organizations'
+import { ListGroups } from './Groups'
 import UnderConstruction from './UnderConstruction';
-import Grouping from "./Grouping"
+import { useEffect } from 'react';
 
 const Routes = () => {
   const requestedUrl = '/app/'
+  const orgs = useSelector(({ orgs }) => orgs);
+  const [routes, setRoutes] = useState([])
+
+  const getRoutes = () => {
+    setTimeout(() => {
+      let tempRoutes = []
+      if (orgs.length > 0) {
+        tempRoutes.push(<Route path={requestedUrl + `dashboard`} component={Dashboard} />)
+        tempRoutes.push(<Route path={requestedUrl + `settings`} component={UnderConstruction} />)
+        tempRoutes.push(<Route path={requestedUrl + `editor`} component={UnderConstruction} />)
+        tempRoutes.push(<Route path={requestedUrl + `tests`} component={ListTests} />)
+        tempRoutes.push(<Route path={requestedUrl + `runs`} component={UnderConstruction} />)
+        tempRoutes.push(<Route path={requestedUrl + `groups`} component={ListGroups} />)
+      }
+
+      setRoutes(tempRoutes)
+    }, 500);
+  }
+
+  useEffect(() => {
+    getRoutes();
+  }, [])
 
   return (
     <AppLayout>
       <Suspense fallback={<PageLoader />}>
         <Switch>
-
-          <Redirect exact from={requestedUrl} to={requestedUrl + `/app/dashboard`} />
-          <Route path={requestedUrl + `dashboard`} component={Dashboard} />
-          {/* <Route path={requestedUrl + `user/add`} component={UnderConstruction} /> */}
-          {/* <Route path={requestedUrl + `users`} component={UnderConstruction} /> */}
-          <Route path={requestedUrl + `settings`} component={UnderConstruction} />
-          <Route path={requestedUrl + `editor`} component={UnderConstruction} />
-          {/* <Route path={requestedUrl + `test/add`} component={AddTest} /> */}
-          <Route path={requestedUrl + `tests`} component={ListTests} />
-          <Route path={requestedUrl + `grouping`} component={Grouping} />
-          <Route path={requestedUrl + `runs`} component={UnderConstruction} />
-          <Route path={requestedUrl + `group/add`} component={AddGroup} />
-          <Route path={requestedUrl + `groups`} component={ListGroups} />
+          {routes}
+          <Route path={requestedUrl + `orgs`} component={ListOrgs} />
           <Route component={lazy(() => import('../Pages/404'))} />
         </Switch>
       </Suspense>

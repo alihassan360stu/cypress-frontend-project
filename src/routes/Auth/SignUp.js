@@ -13,6 +13,7 @@ import { CurrentAuthMethod } from '@jumbo/constants/AppConstants';
 import AuthWrapper from './AuthWrapper';
 import { NavLink } from 'react-router-dom';
 import { AuhMethods } from '@services/auth';
+import { setSelectedOrg } from '@redux/actions';
 
 const useStyles = makeStyles(theme => ({
   authThumb: {
@@ -76,16 +77,28 @@ const SignUp = ({ method = CurrentAuthMethod, variant = 'default', wrapperVarian
   const dispatch = useDispatch();
   const classes = useStyles({ variant });
   const { authUser } = useSelector(({ auth }) => auth);
+  const orgs = useSelector(({ orgs }) => orgs);
+  const org = useSelector(({ org }) => org);
   const history = useHistory();
 
   if (authUser) {
     var search = window.location.search;
     var params = new URLSearchParams(search);
     var redirectUrl = params.get('action_url');
-    if (redirectUrl) {
-      history.push(redirectUrl);
-    } else {
-      history.push('/app/dashboard');
+    if (orgs) {
+      if (orgs.length < 1) {
+        history.push('/app/orgs');
+      } else {
+        if(!org) {
+          dispatch(setSelectedOrg(orgs[0]));
+          localStorage.setItem('cypress_selected_org_1001', JSON.stringify(orgs[0]));
+        }
+        if (redirectUrl) {
+          history.push(redirectUrl);
+        } else {
+          history.push('/app/dashboard');
+        }
+      }
     }
   }
 

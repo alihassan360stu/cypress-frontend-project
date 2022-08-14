@@ -1,9 +1,9 @@
 import React, { useState, forwardRef, createRef } from 'react';
-import { Box, MenuItem, Divider, Button, CircularProgress } from '@material-ui/core';
+import { Box, MenuItem, Button } from '@material-ui/core';
 import { MenuList, Paper, Popover } from '@material-ui/core';
 
 import { lighten, makeStyles } from '@material-ui/core/styles';
-import { blue, green, grey, orange, red } from '@material-ui/core/colors';
+import { blue, grey } from '@material-ui/core/colors';
 import { useSelector } from 'react-redux';
 
 import PageContainer from '@jumbo/components/PageComponents/layouts/PageContainer';
@@ -12,25 +12,22 @@ import withReactContent from 'sweetalert2-react-content';
 import Axios from 'axios';
 import qs from 'qs';
 
-import { Column, Table, SortDirection, AutoSizer } from "react-virtualized";
-import "react-virtualized/styles.css";
-
 import {
   AddBox, ArrowDownward, Check, ChevronLeft,
   ChevronRight, Clear, DeleteOutline, Edit,
   FilterList, FirstPage, LastPage, Remove, SaveAlt, Search, ViewColumn,
-  MoreVert, FileCopy, ControlPointDuplicate, Delete, PlayArrow,
+  MoreVert, Done, Delete
 }
   from '@material-ui/icons';
 
 import MaterialTable from '@material-table/core';
 import { withStyles } from '@material-ui/styles';
-import EditDialog from './EditDialog';
+// import EditDialog from './EditDialog';
 import { ExportCsv, ExportPdf } from '@material-table/exporters';
 import moment from 'moment';
 import AddNew from './AddNew';
-import Duplicate from './Duplicate';
-
+import { useDispatch } from 'react-redux';
+import { setSelectedOrg } from '@redux/actions';
 const MySwal = withReactContent(Swal);
 
 const breadcrumbs = [];
@@ -72,12 +69,12 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-const initalState = {
-  totalData: 0,
-  is_loading: true,
-  showDialog: false,
-  rowData: {}
-}
+// const initalState = {
+//   totalData: 0,
+//   is_loading: true,
+//   showDialog: false,
+//   rowData: {}
+// }
 
 const tableIcons = {
   Add: forwardRef((props, ref) => <AddBox {...props} ref={ref} />),
@@ -132,13 +129,12 @@ var tableRef = createRef();
 const ListAll = (props) => {
   const { theme } = props;
   const classes = useStyles();
+  const dispatch = useDispatch();
   const [dialogState, setDialogState] = useState(initialDialogState);
   const [refereshData, setRefereshData] = useState(false);
-  const [rowData, setRowData] = useState(undefined);
+  // const [rowData, setRowData] = useState(undefined);
   const [showCreateDial, setShowCreateDial] = useState(false);
-  const [showDuplicate, setShowDuplicate] = useState(false);
-
-  const { authUser } = useSelector(({ auth }) => auth);
+  const org = useSelector(({ org }) => org);
   const [moreOptions, setMoreOptions] = useState([]);
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -154,7 +150,7 @@ const ListAll = (props) => {
       }
     },
     {
-      title: 'Test Name', field: 'name', render: (rowData) => {
+      title: 'Name', field: 'name', render: (rowData) => {
         return (
           <div>
             <h4>{rowData.name}</h4>
@@ -171,32 +167,6 @@ const ListAll = (props) => {
         )
       }
     },
-    {
-      title: 'Last Run', field: 'last_run', render: (rowData) => {
-        return (
-          <div>
-            <h4>{rowData.last_run ? moment.utc(rowData.last_run).local().format('D/MM/YYYY hh:mm a') : 'Never Tested'}</h4>
-          </div>
-        )
-      }
-    },
-    {
-      title: 'Status', field: 'is_running', render: (rowData) => {
-        return (
-          <div>
-            {rowData.is_running ?
-              <Box display={'flex'} flexDirection='row' justifyContent={'center'}>
-                <h4 style={{ color: orange[500] }}> Running </h4>
-                &nbsp;
-                <CircularProgress size={20} variant='indeterminate' style={{ marginTop: '-2' }} />
-              </Box>
-              :
-              <h4 style={{ color: green[500] }}>Not Running </h4>
-            }
-          </div>
-        )
-      }
-    }
   ]
 
   const getData = (params) => {
@@ -207,20 +177,18 @@ const ListAll = (props) => {
         search,
         page,
         pageSize,
-        status: 1,
+        status: 1
       });
 
       var config = {
         method: 'post',
-        url: '/test',
+        url: '/organization',
         data: data
       };
 
       Axios(config).then(ans => {
+        console.log(ans.data)
         if (ans.data.status) {
-          ans.data.data.map(item => {
-            item.is_running = false;
-          })
           resolve(ans.data.data)
         } else {
           reject(ans.data.message)
@@ -232,9 +200,9 @@ const ListAll = (props) => {
     })
   }
 
-  const blockCall = (data) => {
+  const deleteCall = (data) => {
     return new Promise((resolve, reject) => {
-      Axios.post(authUser.api_url + '/block-unblock-user', data).then(ans => {
+      Axios.post('/organization/delete', data).then(ans => {
         if (ans.data.status) {
           resolve(ans.data.message)
         } else {
@@ -246,29 +214,32 @@ const ListAll = (props) => {
     })
   }
 
-  const editRowClick = async (event, rowData) => {
-    event.preventDefault();
-    setTimeout(() => {
-      setDialogState(prevState => ({ ...prevState, show: true, rowData }))
-      // setDialogState({ show: true, rowData })
-    }, 10);
+  const selectRowClick = async (rowData) => {
+    if (org && org._id === rowData._id) {
+      showMessage('warning', 'Already Selected');
+      return;
+    }
+    dispatch(setSelectedOrg(rowData))
   }
 
-  const blockRowClick = async (event, rowData) => {
-    event.preventDefault();
+  const deleteRowClick = async (rowData) => {
+    if (org && org._id === rowData._id) {
+      showMessage('warning', `Can't Delete Selected Organization`);
+      return;
+    }
 
     MySwal.fire({
       title: 'Are you sure?',
-      text: "Do You Want To " + (rowData.status ? 'Block' : 'Unblock') + " This User",
+      text: "Do You Want To Remove This Organization",
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: rowData.status ? 'Yes, Block it !' : 'Yes, Unblock It !',
+      confirmButtonText: 'Yes, Delete it !',
       cancelButtonText: 'No, cancel !',
       reverseButtons: true,
     }).then(async result => {
       if (result.value) {
         try {
-          const result = await blockCall({ user_id: rowData._id, status: !rowData.status })
+          const result = await deleteCall({ organization_id: rowData._id })
           MySwal.fire('Success', result, 'success');
           setDialogState(prevState => ({ ...prevState, refreshData: true }))
         } catch (e) {
@@ -288,50 +259,22 @@ const ListAll = (props) => {
     tempData.push(
       <MenuItem onClick={(e) => {
         handlePopoverClose()
-        showMessage('warning', 'Under Development');
+        selectRowClick(row)
       }}>
-        <PlayArrow /> &nbsp; Run Test
+        <Done /> &nbsp; Select
       </MenuItem>
     )
 
     tempData.push(
       <MenuItem onClick={(e) => {
         handlePopoverClose()
-        setRowData(row)
-        setShowDuplicate(true)
-      }}>
-        <FileCopy /> &nbsp; Duplicate
-      </MenuItem>
-    )
-    tempData.push(
-      <MenuItem onClick={(e) => {
-        handlePopoverClose()
-        showMessage('warning', 'Under Development');
-      }}>
-        <Edit /> &nbsp; Edit
-      </MenuItem>
-    )
-    tempData.push(
-      <MenuItem onClick={(e) => {
-        handlePopoverClose()
-        showMessage('warning', 'Under Development');
+        deleteRowClick(row)
       }}>
         <Delete /> &nbsp; Delete
       </MenuItem>
     )
-
-    tempData.push(
-      <MenuItem onClick={(e) => {
-        handlePopoverClose()
-        showMessage('warning', 'Under Development');
-      }}>
-        <ControlPointDuplicate /> &nbsp; Update Group
-      </MenuItem>
-    )
-
     setMoreOptions(tempData);
   }
-
 
   const handlePopoverClose = () => {
     setAnchorEl(null);
@@ -343,8 +286,7 @@ const ListAll = (props) => {
         icon: () => <MoreVert style={{ color: blue[500] }} />,
         className: classes.actionBlueButton,
         tooltip: 'Show More Options',
-        onClick: handlePopoverOpen,
-        hidden: row.is_running
+        onClick: handlePopoverOpen
       }
     ),
   ]
@@ -367,25 +309,18 @@ const ListAll = (props) => {
   }
 
   return (
-    <div>
-      <PageContainer heading="" breadcrumbs={breadcrumbs}>
-        <div>
-          <Box className={classes.pageTitle} fontSize={{ xs: 30, sm: 30 }}>
-            All Tests
-          </Box>
-        </div>
-        <Divider />
-        <br />
+    <PageContainer heading="" breadcrumbs={breadcrumbs} >
+      <div style={{ marginTop: "-5%" }}>
         <Box display='flex' flexDirection='row' justifyContent='end'>
           <Button type='button' variant="contained" color="primary" onClick={() => { setShowCreateDial(true) }}>
-            Create New Test
+            Add Organization
           </Button>
         </Box>
         <br />
         <MaterialTable
           tableRef={tableRef}
           icons={tableIcons}
-          title="Tests List"
+          title="Organizations List"
           columns={columns}
           actions={actions}
           data={async (query) => {
@@ -394,7 +329,7 @@ const ListAll = (props) => {
               const data = await getData({ orderBy: orderBy ? orderBy.field : null, orderDirection, page: (page + 1), pageSize, search });
               return new Promise((resolve, reject) => {
                 resolve({
-                  data: data,
+                  data,
                   page: query.page,
                   totalCount: data.count //? state.totalAssociations : 5//state.totalAssociations
                 })
@@ -463,10 +398,8 @@ const ListAll = (props) => {
         )}
 
         {showCreateDial && <AddNew hideDialog={setShowCreateDial} setRefereshData={setRefereshData} />}
-        {showDuplicate && <Duplicate hideDialog={setShowDuplicate} setRefereshData={setRefereshData} rowData={rowData} />}
-      </PageContainer>
-      {/* } */}
-    </div>
+      </div>
+    </PageContainer>
   );
 };
 

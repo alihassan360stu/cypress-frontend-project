@@ -5,6 +5,8 @@ import { Box } from '@material-ui/core';
 import { alpha } from '@material-ui/core/styles';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import HeaderNotifications from './HeaderNotifications';
+import HeaderOrgs from './HeaderOrgs';
+import HeaderLogin from './HeaderLogin';
 import Logo from '../Logo';
 
 const useStyles = makeStyles(theme => ({
@@ -90,8 +92,9 @@ const Header = () => {
         <SearchPopover iconClassName={classes.iconBtn} />
       </Hidden> */}
       {/* <AppsMenu /> */}
-      {/* <HeaderMessages /> */}
+      <HeaderOrgs />
       <HeaderNotifications />
+      <HeaderLogin />
     </Toolbar>
   );
 };
