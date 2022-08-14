@@ -25,7 +25,7 @@ const useStyles = makeStyles(() => ({
     left: 0,
     top: 0,
     zIndex: 1,
-    width: '100%',
+    width: '10%',
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
@@ -57,7 +57,7 @@ const AppLayout = ({ children }) => {
   }
 
   if (['/signin', '/signup', '/forgot-password'].includes(location.pathname)) {
-    return <div style={{ minHeight: '100vh', width: '100%', display: 'flex' }}>{children}</div>;
+    return <div style={{ minHeight: '100vh', width: '10%', display: 'flex' }}>{children}</div>;
   }
 
   switch (layout) {

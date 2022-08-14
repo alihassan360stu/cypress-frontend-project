@@ -1,4 +1,4 @@
-import React, { useState, forwardRef, createRef } from 'react';
+import React, { useState, forwardRef, createRef, useEffect } from 'react';
 import { Box, MenuItem, Divider, Button } from '@material-ui/core';
 import {
   MenuList, Paper, Popover, Dialog, DialogActions, DialogContent, DialogTitle,
@@ -21,8 +21,10 @@ import {
   MoreVert, FileCopy, ControlPointDuplicate, Delete, PlayArrow, Close
 }
   from '@material-ui/icons';
-
+import GetAppIcon from '@material-ui/icons/GetApp';
+import BackupIcon from '@material-ui/icons/Backup';
 import MaterialTable from '@material-table/core';
+import BurstModeIcon from '@material-ui/icons/BurstMode';
 import { withStyles } from '@material-ui/styles';
 import { ExportCsv, ExportPdf } from '@material-table/exporters';
 import moment from 'moment';
@@ -141,24 +143,104 @@ const ListAll = (props) => {
   const [index, setIndex] = useState({ index: 0, status: false });
   const [testRun, setTestRun] = useState({});
   const [runAllTest, setRunAllTes] = useState(false);
-
-
-
+  const [testSelectId, setTestSelectId] = useState([{ testId: "" }]);
+  const [getAllTestCases, setGetAllTestCases] = useState([]);
+  const [countCheckBox, setCountCheckBox] = useState(0);
   const { authUser } = useSelector(({ auth }) => auth);
   const [moreOptions, setMoreOptions] = useState([]);
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
-
+  let checking = (rowData) => { // setting checkbox open or no
+    var ifatchingId = false;
+    testSelectId.map((value) => {
+      if (value.testId === rowData._id) {
+        ifatchingId = true;
+      }
+    })
+    if (ifatchingId) {
+      return true;
+    }
+    else {
+      return false
+    }
+  }
   const columns = [
     {
-      title: <span style={{ cursor: "pointer" }} onClick={() => {
-        setRunAllTes(true)
+      title: countCheckBox > 1 ? <span style={{ cursor: "pointer" }} onClick={() => {
+        var temp = [testSelectId.length];
+        testSelectId.map((value, i) => {
+          temp[i] = { testId: "" };
+        })
+        setTestSelectId(temp);
+        setCountCheckBox(0);
+        setRunAllTes(false)
       }}>
-        Select All
-      </span>, field: 'index', render: (rowData) => {
+        Un Select
+      </span>
+        :
+        <span style={{ cursor: "pointer" }}
+          onClick={() => {
+            if (Array.isArray(getAllTestCases)) {
+              setTestSelectId([{ testId: "" }])
+              var temp = [getAllTestCases.length];
+              getAllTestCases.map((value, index) => {
+                temp[index] = { testId: value._id };
+              });
+              setCountCheckBox(temp.length);
+              setTestSelectId(temp);
+            }
+          }}>
+          Select All
+        </span>
+      , field: 'index', render: (rowData) => {
         return (
           <div>
-            <Checkbox checked={runAllTest} />
+            <Checkbox
+              checked={checking(rowData) ? true : false}
+              onChange={() => {
+                var checkingIdMatchOrNo = true;
+                testSelectId.map((value) => {
+                  if (value.testId === rowData._id) {
+                    checkingIdMatchOrNo = false;
+                  }
+                })
+
+                if (checkingIdMatchOrNo) {
+                  var checkTemproryId = true;
+                  var index = 0;
+                  testSelectId.map((value, i) => {
+                    if (value.testId === "") {
+                      checkTemproryId = false;
+                      index = i;
+                      return
+                    }
+                  })
+                  if (checkTemproryId) {
+                    setTestSelectId([...testSelectId, { testId: rowData._id }])
+                    setCountCheckBox(countCheckBox + 1);
+                    return null
+                  } // new test insertion 
+                  else {
+                    var temp = testSelectId;
+                    temp[index] = { testId: rowData._id };
+                    setTestSelectId(temp)
+                    setCountCheckBox(countCheckBox + 1);
+                    return null;
+                  } // again upodate code
+                }
+                else {
+                  testSelectId.map((value, i) => {
+                    if (value.testId === rowData._id) {
+                      var temp = testSelectId;
+                      temp[i] = { testId: "" };
+                      setTestSelectId(temp)
+                      setCountCheckBox(countCheckBox - 1);
+                      return null
+                    }
+                  })
+                }
+
+              }} />
           </div>
         )
       }
@@ -182,11 +264,27 @@ const ListAll = (props) => {
       }
     },
     {
-      title: 'Last Run', field: 'last_run', render: (rowData) => {
+      title: 'Failed', field: 'failed', render: (rowData) => {
         return (
           <div>
-            <h4>{rowData.last_run ? moment.utc(rowData.last_run).local().format('D/MM/YYYY hh:mm a') : 'Never Tested'}</h4>
+            <h4>{index.index===rowData.index&&!loading?` ${testRun.data.data.pass}/${testRun.data.data.fail}`:"0/0"}</h4>
           </div>
+        )
+      }
+    },
+    {
+      title: 'Success Rate', field: 'successEate', render: (rowData) => {
+        return (
+          <Box width="100%" display="flex" alignItems="center">
+
+            <Box width="90%" display="flex" marginRight="1%">
+              <Box width={"60%"} bgcolor="green" height={"2vh"}></Box>
+              <Box width={"40%"} bgcolor="red"></Box>
+            </Box>
+            <Typography variant='h5'>
+              60%
+            </Typography>
+          </Box>
         )
       }
     },
@@ -196,12 +294,17 @@ const ListAll = (props) => {
           <div>
             {rowData.status ?
               <h4 style={{ color: orange[500] }}>
-                {index.index === rowData.index ?
-                  index.status ? testRun.data.data.result === 1 ? "Passed" : "Falled" : <CircularProgress color="secondary" />
-                  : "Running"}</h4>
+                {
+                  index.index===rowData.index? !index.status? <CircularProgress color="secondary" />:"complete":"Not Running"
+                  // setIndex({ index: row.index, status:false})
+                }</h4>
+
               :
               <h4 style={{ color: green[500] }}>Not Running</h4>
             }
+            {/* setTestRun(response)
+                setIndex({ index: row.index, status: true })
+                setLoading(false) */}
           </div>
         )
       }
@@ -222,12 +325,12 @@ const ListAll = (props) => {
       var config = {
         method: 'post',
         url: 'http://3.21.230.123:3008/api/test',
-        // headers: { 'content-type': 'application/x-www-form-urlencoded' },
         data: data,
       };
 
       Axios(config).then(ans => {
         if (ans.data.status) {
+          setGetAllTestCases(ans.data.data)
           resolve(ans.data.data)
         } else {
           reject(ans.data.message)
@@ -236,23 +339,6 @@ const ListAll = (props) => {
         reject(e)
       })
     })
-
-    //   Axios.get('/test', config).then(ans => {
-    //     // Axios(config).then(ans => {
-    //     console.log(ans)
-    //     // alert(data)
-    //     // alert(JSON.stringify(ans.data))
-
-    //     if (ans.data.status) {
-    //       resolve(ans.data.data)
-    //     } else {
-    //       reject(ans.data.message)
-    //     }
-    //   }).catch(e => {
-    //     console.log(e)
-    //     reject(e)
-    //   })
-    // })
   }
 
   const blockCall = (data) => {
@@ -309,74 +395,120 @@ const ListAll = (props) => {
   const setMoreOptionsByRowData = (row) => {
     const tempData = [];
     tempData.push(
-      <MenuItem onClick={(e) => {
-
-
-        var data = qs.stringify({
-          test_id: row._id
-        });
-        var config = {
-          method: 'post',
-          url: 'http://3.21.230.123:3008/api/test/run',
-          data: data
-        };
-        setTimeout(() => {
-          setIndex({ index: row.index, status: false })
-          setLoading(true)
-          handlePopoverClose()
-        }, 500)
-        Axios(config)
-          .then(function (response) {
-            console.log("ali hassan ", response);
-            setTestRun(response)
-            setIndex({ index: row.index, status: true })
-            setLoading(false)
-
-          })
-          .catch(function (error) {
-            setIndex({ index: row.index, status: true })
-            setLoading(false)
+      <MenuItem
+        key={"2"}
+        onClick={(e) => {
+          console.log("row data is ", row)
+          var data = qs.stringify({
+            test_id: row._id,
+            browser: 'chrome',
+            org_id: '62f710f8ac8a4a4028a3473f'
           });
-      }}>
+
+          var config = {
+            method: 'post',
+            url: 'http://3.21.230.123:3008/api/test/run',
+            data: data
+          };
+          setIndex({ index: row.index, status:false});
+          setLoading(true)
+          Axios(config)
+            .then(function (response) {
+              if (response.data.status) {
+                setTestRun(response)
+                console.log("api is ", response)
+                setIndex({ index: row.index, status: true })
+                setLoading(false)
+              }
+              else {
+                // setIndex({ index: row.index, status: false })
+                MySwal.fire('Error', response.data.message, 'error');
+                setLoading(false)
+              }
+            })
+            .catch(function (error) {
+              setIndex({ index: row.index, status: true })
+              console.log("erroe",error);
+              setLoading(false)
+            });
+          handlePopoverClose()
+        }}>
         <PlayArrow style={{ color: "green" }} /> &nbsp; Run Test
       </MenuItem>
     )
     tempData.push(
-      <MenuItem onClick={(e) => {
-        handlePopoverClose()
-        setRowData(row)
-        setDeleteTest(true)
-      }}>
+      <MenuItem
+        key={"3"}
+        onClick={(e) => {
+          handlePopoverClose()
+          setRowData(row)
+          setDeleteTest(true)
+        }}>
         <Delete style={{ color: "red" }} /> &nbsp; Delete
       </MenuItem>
     )
     tempData.push(
-      <MenuItem onClick={(e) => {
-        handlePopoverClose()
-        setRowData(row)
-        setShowDuplicate(true)
-      }}>
-        <FileCopy style={{ color: "blue" }} /> &nbsp; Duplicate
+      <MenuItem
+        key={"4"}
+        onClick={(e) => {
+          handlePopoverClose()
+          setRowData(row)
+          setShowDuplicate(true)
+        }}>
+        <FileCopy style={{ color: "black" }} /> &nbsp; Duplicate
       </MenuItem>
     )
     tempData.push(
-      <MenuItem onClick={(e) => {
-        handlePopoverClose()
-        setRowData(row)
-        setEditTest(true)
-      }}>
-        <Edit style={{ color: "blue" }} /> &nbsp; Edit
+      <MenuItem
+        key={"5"}
+        onClick={(e) => {
+          handlePopoverClose()
+          setRowData(row)
+          setEditTest(true)
+        }}>
+        <Edit style={{ color: "black" }} /> &nbsp; Edit
       </MenuItem>
     )
     tempData.push(
-      <MenuItem onClick={(e) => {
-        handlePopoverClose()
-        showMessage('warning', 'Under Development');
-      }}>
-        <ControlPointDuplicate style={{ color: "blue" }} /> &nbsp; Update Group
+      <MenuItem
+        key={"6"}
+        onClick={(e) => {
+          handlePopoverClose()
+          showMessage('warning', 'Under Development');
+        }}>
+        <ControlPointDuplicate style={{ color: "black" }} /> &nbsp; Update Group
       </MenuItem>
     )
-
+    tempData.push(
+      <MenuItem
+        key={"8"}
+        onClick={(e) => {
+          handlePopoverClose()
+          showMessage('warning', 'Under Development');
+        }}>
+        <BackupIcon style={{ color: "black" }} /> &nbsp; Upload
+      </MenuItem>
+    )
+    tempData.push(
+      <MenuItem
+        key={"7"}
+        onClick={(e) => {
+          handlePopoverClose()
+          showMessage('warning', 'Under Development');
+        }}>
+        <GetAppIcon style={{ color: "black" }} /> &nbsp; Download
+      </MenuItem>
+    )
+    tempData.push(
+      <MenuItem
+        key={"8s"}
+        onClick={(e) => {
+          handlePopoverClose()
+          showMessage('warning', 'Under Development');
+        }}>
+        <BurstModeIcon style={{ color: "black" }} /> &nbsp; Test Results
+      </MenuItem>
+    )
     setMoreOptions(tempData);
   }
 
@@ -416,17 +548,27 @@ const ListAll = (props) => {
   return (
     <div>
       <PageContainer heading="" breadcrumbs={breadcrumbs}>
-
-        <Box lineHeight={"0.5px"} display='flex' flexDirection='row' justifyContent='end'>
-          <Button type='button' variant="contained" color="primary" onClick={() => { setShowCreateDial(true) }}>
-            Create New Test
-          </Button>
+        <Box display="flex" width="100%" height="8vh" justifyContent={countCheckBox > 1 ? "" : "end"} lineHeight="1.5">
+          {
+            countCheckBox > 1 &&
+            <Box bgcolor="white" height="6vh" width="20%" display="flex" justifyContent="center" alignItems="center" lineHeight="40px">
+              <PlayArrow style={{ color: "green", cursor: "pointer" }} />
+              <Edit style={{ color: "black", marginRight: "8%", marginLeft: "8%", cursor: "pointer" }} />
+              <FileCopy style={{ color: "black", cursor: "pointer" }} />
+            </Box>
+          }
+          <Box width="80%" display='flex' flexDirection='row' justifyContent='end'>
+            <Button type='button' variant="contained" style={{ height: "6vh" }} color="primary" onClick={() => { setShowCreateDial(true) }}>
+              Create New Test
+            </Button>
+          </Box>
         </Box>
         <MaterialTable
           tableRef={tableRef}
           icons={tableIcons}
           columns={columns}
           actions={actions}
+          title="Group"
           data={async (query) => {
             // querry data is option data 
             try {
@@ -463,11 +605,12 @@ const ListAll = (props) => {
               color: '#fff'
             },
             cellStyle: {
-              hover: blue[500]
+              hover: blue[500],
+              Text: "center"
             },
             rowStyle: (rowData, index) => ({
-              backgroundColor: (index % 2 === 0) ? grey[50] : '#FFF',
-              padding: 10
+              backgroundColor: (index % 2 === 0) ? grey[50] : '#FFF', textAlign: "center"
+              // padding:
             }),
             exportMenu: [{
               label: 'Export PDF',
@@ -477,9 +620,9 @@ const ListAll = (props) => {
               exportFunc: (cols, datas) => ExportCsv(cols, datas, 'List All Users ' + moment().format('DD-MM-YYYY'))
             }],
             showFirstLastPageButtons: true,
-            pageSize: 8,
+            pageSize: 10,
             padding: 'default',
-            pageSizeOptions: [20, 50, 100],
+            pageSizeOptions: [10, 20, 50, 100],
           }}
         />
         {/* open state is used for action items ( clone test, edit test etc ) and open is array that have assigng thr tempData [] array*/}
@@ -514,8 +657,6 @@ const ListAll = (props) => {
                 <CircularProgress color="secondary" />
               </Backdrop>
               <Box style={{ textAlign: "center" }}><Typography variant="h6">Do You Want To Delete Test Record</Typography></Box>
-
-
             </DialogTitle>
             <Box position="absolute" top={0} right={0}>
               <IconButton>
