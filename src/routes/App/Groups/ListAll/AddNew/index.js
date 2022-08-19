@@ -20,7 +20,6 @@ const useStyles = makeStyles(theme => ({
     padding: '2%',
     margin: '0 auto',
     backgroundColor: lighten(theme.palette.background.paper, 0.1),
-
   },
   titleRoot: {
     marginBottom: 14,
@@ -69,21 +68,22 @@ const Toast = MySwal.mixin({
 const initalFormState = {
   name: '',
   description: '',
-  script: '',
+  parent:"",
   is_loading: false
 }
 
-const EditDialog = ({ hideDialog, setRefereshData }) => {
+const EditDialog = ({ hideDialog, setRefereshData ,parentData}) => {
   // dialogState
+  console.log("data is row ",parentData);
   const classes = useStyles();
   const [formState, setFormState] = useState(initalFormState);
   const org = useSelector(({ org }) => org);
-
+  const orgRoot = useSelector(({ orgRoot }) => orgRoot);
   const handleOnChangeTF = (e) => {
     var { name, value } = e.target;
     e.preventDefault();
     setFormState(prevState => ({ ...prevState, [name]: value }));
-  }
+  } // getting data 
 
   const showMessage = (icon, text, title) => {
     Toast.fire({
@@ -98,16 +98,16 @@ const EditDialog = ({ hideDialog, setRefereshData }) => {
 
   const submitRequest = (data) => {
     try {
-      Axios.post('/test/create', data).then(result => {
-        result = result.data;;
+      Axios.post('/group/create', data).
+      then(result => {
+        result = result.data;
         if (result.status) {
           showMessage('success', result.message);
-          setTimeout(() => {
+            setTimeout(() => {
             hideDialog(false)
             setRefereshData(true)
           }, 1000);
         } else {
-          showMessage('error', result.message);
           setFormState(prevState => ({ ...prevState, is_loading: false }));
         }
       }).catch(e => {
@@ -119,16 +119,16 @@ const EditDialog = ({ hideDialog, setRefereshData }) => {
     }
   }
 
+
   const onSubmit = (e) => {
     e.preventDefault();
     if (validate()) {
       try {
-        let { name, description, script } = formState
+        let { name, description,parent} = formState
         setFormState(prevState => ({ ...prevState, is_loading: true }))
         if (org) {
-          let dataToSubmit = { name, description, script, kind: 'test', org_id: org._id };
+          let dataToSubmit = { name, description, org_id:orgRoot._id,parent};
           submitRequest(dataToSubmit)
-
         } else {
           MySwal.fire('Error', 'No Organization Selected', 'error');
         }
@@ -137,14 +137,12 @@ const EditDialog = ({ hideDialog, setRefereshData }) => {
       }
     }
   }
-
   const handleClose = (e) => {
     e.preventDefault();
     setTimeout(() => {
       hideDialog(false)
     }, 100);
   }
-
   return (
     <PageContainer heading="" breadcrumbs={[]}>
       <Dialog
@@ -163,14 +161,14 @@ const EditDialog = ({ hideDialog, setRefereshData }) => {
           <CmtCardContent >
             <div>
               <Box className={classes.pageTitle} fontSize={{ xs: 15, sm: 15 }}>
-                Create New Test
+                Create New Group
               </Box>
             </div>
             <Divider />
 
             <form autoComplete="off" onSubmit={onSubmit}>
               <Box mb={2}>
-                <BasicForm state={formState} handleOnChangeTF={handleOnChangeTF} />
+                <BasicForm state={formState} handleOnChangeTF={handleOnChangeTF} data={parentData} org={orgRoot.root} />
                 <Divider />
                 <br />
                 <Divider />

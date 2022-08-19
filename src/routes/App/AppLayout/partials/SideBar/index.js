@@ -40,7 +40,7 @@ const SideBar = () => {
         setMenus(menusLess)
       }
     }, 500);
-  }, [])
+  }, [orgs])
 
   return (
     <PerfectScrollbar className={classes.perfectScrollbarSidebar}>

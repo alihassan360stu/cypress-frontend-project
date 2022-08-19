@@ -43,40 +43,7 @@ const BasicForm = ({ state, handleOnChangeTF, data, org }) => {
                 onChange={handleOnChangeTF}
                 disabled={state.is_loading}
             />
-            <TextField
-                type="text"
-                label="Parent"
-                fullWidth
-                select
-                name="parent"
-                value={state.script}
-                margin="normal"
-                variant="outlined"
-                required
-                className={classes.textFieldRoot}
-                onChange={handleOnChangeTF}
-                disabled={state.is_loading}
 
-            >
-                <MenuItem value={org}>
-                   <HomeIcon style={{color: "black", fontSize: "2rem" , marginRight:"5%"}}/>  Root
-                </MenuItem>
-
-                {
-                    Array.isArray(data) && data.map((value, index) => {
-                        return (<MenuItem key={index} value={value._id}>
-                            <FolderOpenIcon style={{ color: "blue", fontSize: "2rem" , marginRight:"5%" }} />  {value.name}
-                        </MenuItem>)
-                    })
-                }
-
-                {/* <MenuItem  value={data._id}>
-                 
-                 <Button onClick={()=>{console.log("ali hassan")}}>
-                 more 
-                 </Button>
-                </MenuItem> */}
-            </TextField>
             {/* <TextField
                 type="text"
                 label={'Script'}

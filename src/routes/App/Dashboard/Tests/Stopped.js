@@ -1,6 +1,6 @@
 import React from 'react';
 import { Group } from '@material-ui/icons';
-import HoverInfoCard from '@jumbo/components/Common/HoverInfoCard';
+import HoverInfoCard from './HoverInfoCard';
 
 const Widget = ({ data }) => {
   return (
@@ -9,9 +9,8 @@ const Widget = ({ data }) => {
       backgroundColor="#061fbe"
       title={data}
       counterProps={{ duration: 1 }}
-      subTitle={`Stoped`}
+      subTitle={`Not Tested Yet`}
       showArrow={false}
-      linkOnArrow={`assoc`}
     />
   );
 };

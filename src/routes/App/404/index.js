@@ -2,6 +2,7 @@ import React from 'react';
 import IntlMessages from '../../../@jumbo/utils/IntlMessages';
 import Box from '@material-ui/core/Box';
 import { makeStyles } from '@material-ui/core/styles';
+import { CircularProgress } from '@material-ui/core';
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -30,10 +31,7 @@ const Error404 = () => {
         AUTON8
       </Box>
       <Box fontSize={{ xs: 60, sm: 60 }} className={classes.errorNumber}>
-        404
-      </Box>
-      <Box fontSize={{ xs: 16, sm: 24 }} mb={8} color="grey.500">
-        <IntlMessages id="extraPages.404Msg" />
+        <CircularProgress size={50} />
       </Box>
     </Box>
   );

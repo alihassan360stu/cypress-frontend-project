@@ -6,6 +6,7 @@ import Auth from './Auth';
 import Permissions from './Permissions';
 import Organizations from './Organizations';
 import SelectedOrg from './SelectedOrg';
+import OrgRootId from './OrgRootId';
 
 export default history =>
   combineReducers({
@@ -15,4 +16,5 @@ export default history =>
     permissions: Permissions,
     orgs: Organizations,
     org: SelectedOrg,
+    orgRoot:OrgRootId,
   });

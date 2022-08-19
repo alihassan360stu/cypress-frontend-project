@@ -11,10 +11,6 @@ import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import Axios from 'axios';
 import BasicForm from './BasicForm';
-import { useDispatch } from 'react-redux';
-import { setSelectedOrg } from '@redux/actions';
-import { setAuthUser } from '@redux/actions/Auth';
-import { AuhMethods } from '@services/auth';
 
 const MySwal = withReactContent(Swal);
 
@@ -24,7 +20,6 @@ const useStyles = makeStyles(theme => ({
     padding: '2%',
     margin: '0 auto',
     backgroundColor: lighten(theme.palette.background.paper, 0.1),
-
   },
   titleRoot: {
     marginBottom: 14,
@@ -76,22 +71,18 @@ const initalFormState = {
   is_loading: false
 }
 
-const EditDialog = ({ hideDialog, setRefereshData }) => {
+const EditDialog = ({ hideDialog, setRefereshData ,parentData}) => {
+  console.log("id is" ,parentData )
   // dialogState
   const classes = useStyles();
-  const org = useSelector(({ org }) => org);
-  const orgs = useSelector(({ orgs }) => orgs);
-  const { authUser } = useSelector(({ auth }) => auth);
   const [formState, setFormState] = useState(initalFormState);
-  const dispatch = useDispatch();
-
-
-
+  const org = useSelector(({ org }) => org);
+  const orgRoot = useSelector(({ orgRoot }) => orgRoot);
   const handleOnChangeTF = (e) => {
     var { name, value } = e.target;
     e.preventDefault();
     setFormState(prevState => ({ ...prevState, [name]: value }));
-  }
+  } // getting data 
 
   const showMessage = (icon, text, title) => {
     Toast.fire({
@@ -106,31 +97,16 @@ const EditDialog = ({ hideDialog, setRefereshData }) => {
 
   const submitRequest = (data) => {
     try {
-      Axios.post('/organization/create', data).then(result => {
-        result = result.data;;
+      Axios.put('/group', data).
+      then(result => {
+        result = result.data;
         if (result.status) {
-          // if (orgs && orgs.length < 1) {
-          //   dispatch(setOrganizations([result.data]));
-          // } else {
-          //   let temp = orgs;
-          //   temp.push(result.data)
-          //   dispatch(setOrganizations(temp));
-          // }
-          if (!org) {
-            dispatch(setSelectedOrg(result.data))
-          }
-          let user = authUser;
-          user.organization.push(result.data)
-          // dispatch(setAuthUser(user));
-          dispatch(AuhMethods.basic.updateUser(user))
-
           showMessage('success', result.message);
-          setTimeout(() => {
+            setTimeout(() => {
             hideDialog(false)
             setRefereshData(true)
           }, 1000);
         } else {
-          showMessage('error', result.message);
           setFormState(prevState => ({ ...prevState, is_loading: false }));
         }
       }).catch(e => {
@@ -142,28 +118,30 @@ const EditDialog = ({ hideDialog, setRefereshData }) => {
     }
   }
 
+
   const onSubmit = (e) => {
     e.preventDefault();
     if (validate()) {
       try {
-        let { name, description, script } = formState
+        let { name, description} = formState
         setFormState(prevState => ({ ...prevState, is_loading: true }))
-
-        let dataToSubmit = { name, description };
-        submitRequest(dataToSubmit)
+        if (org) {
+          let dataToSubmit = { name, description,group_id:parentData[0]._id};
+          submitRequest(dataToSubmit)
+        } else {
+          MySwal.fire('Error', 'No Organization Selected', 'error');
+        }
       } catch (e) {
         MySwal.fire('Error', e, 'error');
       }
     }
   }
-
   const handleClose = (e) => {
     e.preventDefault();
     setTimeout(() => {
       hideDialog(false)
     }, 100);
   }
-
   return (
     <PageContainer heading="" breadcrumbs={[]}>
       <Dialog
@@ -182,19 +160,19 @@ const EditDialog = ({ hideDialog, setRefereshData }) => {
           <CmtCardContent >
             <div>
               <Box className={classes.pageTitle} fontSize={{ xs: 15, sm: 15 }}>
-                Add Organization
+                Edit New Group
               </Box>
             </div>
             <Divider />
 
             <form autoComplete="off" onSubmit={onSubmit}>
               <Box mb={2}>
-                <BasicForm state={formState} handleOnChangeTF={handleOnChangeTF} />
+                <BasicForm state={formState} handleOnChangeTF={handleOnChangeTF} data={parentData} org={orgRoot.root} />
                 <Divider />
                 <br />
                 <Divider />
                 <Button style={{ marginTop: 10 }} type='submit' variant="contained" color="primary" disabled={formState.is_loading}>
-                  Add
+                  Edit
                 </Button>
                 <Button style={{ marginTop: 10, marginLeft: 20 }} type='button' variant="contained" color="primary" disabled={formState.is_loading} onClick={handleClose}>
                   Cancel

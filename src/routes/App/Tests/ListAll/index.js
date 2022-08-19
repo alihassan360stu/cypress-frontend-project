@@ -1,5 +1,5 @@
 import React, { useState, forwardRef, createRef } from 'react';
-import { Box, MenuItem, CircularProgress, Fab, Tooltip } from '@material-ui/core';
+import { Box, MenuItem, CircularProgress, Fab, Tooltip, Typography } from '@material-ui/core';
 import { MenuList, Paper, Popover } from '@material-ui/core';
 
 import { lighten, makeStyles } from '@material-ui/core/styles';
@@ -12,15 +12,13 @@ import withReactContent from 'sweetalert2-react-content';
 import Axios from 'axios';
 import qs from 'qs';
 import Fade from 'react-reveal/Fade';
-
-
 import "react-virtualized/styles.css";
 
 import {
   AddBox, ArrowDownward, Check, ChevronLeft,
   ChevronRight, Clear, DeleteOutline, Edit,
   FilterList, FirstPage, LastPage, Remove, SaveAlt, Search, ViewColumn,
-  MoreVert, FileCopy, ControlPointDuplicate, Delete, PlayArrow, Add,
+  MoreVert, FileCopy, ControlPointDuplicate, Delete, PlayArrow, Add, History
 }
   from '@material-ui/icons';
 
@@ -34,6 +32,14 @@ import Duplicate from './Duplicate';
 import BrowserSelect from './BrowserSelect';
 import MultiRun from './MultiRun';
 import { useEffect } from 'react';
+import { Constants } from '@services';
+var crypto = require('crypto');
+
+// import { CProgress } from '@coreui/bootstrap-react'
+// import { CProgressBar } from '@coreui/bootstrap-react'
+
+
+// import {  CProgressBar } from '@coreui/react';
 
 const MySwal = withReactContent(Swal);
 
@@ -146,7 +152,6 @@ const ListAll = (props) => {
   const [showEdit, setShowEdit] = useState(false);
   const org = useSelector(({ org }) => org);
   const [selectedRows, setSelectedRows] = useState([]);
-
   const [moreOptions, setMoreOptions] = useState([]);
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -180,14 +185,102 @@ const ListAll = (props) => {
       }
     },
     {
-      title: 'Last Run', field: 'last_run', render: (rowData) => {
+      title: 'Failed', field: 'total_pass/total_fail', render: (rowData) => {
         return (
           <div>
-            <h5>{rowData.last_run ? moment.utc(rowData.last_run).local().format('D/MM/YYYY hh:mm a') : 'Never Tested'}</h5>
+            <h5>{rowData.total_fail}/{rowData.total_pass}</h5>
           </div>
         )
       }
     },
+    {
+      title: 'Success Rate', field: 'last_run', width: "18%",
+      render: (rowData) => {
+        // let readings = [
+        //   {
+        //     name: 'Apples',
+        //     value: 60,
+        //     color: '#eb4d4b'
+        //   },
+        let totalPassPercent = ((rowData.total_pass / (rowData.total_pass + rowData.total_fail)) * 100).toFixed(2);
+        let totalFailedPercent = ((rowData.total_fail / (rowData.total_pass + rowData.total_fail)) * 100).toFixed(2)
+
+        let bars = [
+          { name: 'Total Pass', width: 40, color: '#04ca49' },
+          { name: 'Total Failed', width: 80, color: '#a70505' },
+        ]
+
+        if (totalPassPercent === 'NaN')
+          return (
+            <h5>Not Tested Yet</h5>
+          )
+        else
+          return (
+            <div style={{ display: 'flex', width: '100%', borderRadius: '10px' }}>
+              <Tooltip title={`Total Passed ${totalPassPercent}%`}>
+                <div style={{ width: `${totalPassPercent}%`, background: '#04ca49', height: '3vh' }}></div>
+              </Tooltip>
+              <Tooltip title={`Total Passed ${totalFailedPercent}%`}>
+                <div style={{ width: `${totalFailedPercent}%`, background: '#a70505', height: '3vh' }}></div>
+              </Tooltip>
+              {/* <CProgress className="mb-3">
+                <CProgressBar color="success" variant="striped" animated value={25} />
+              </CProgress>
+              <CProgress className="mb-3">
+                <CProgressBar color="info" variant="striped" animated value={50} />
+              </CProgress>
+              <CProgress className="mb-3">
+                <CProgressBar color="warning" variant="striped" animated value={75} />
+              </CProgress>
+              <CProgress className="mb-3">
+                <CProgressBar color="danger" variant="striped" animated value={100} />
+              </CProgress> */}
+            </div>
+          )
+        //   <div style={{ display: 'flex', flexDirection: 'row' }}>
+        //     <div style={{ flex: 1 }}>
+        //       <BarChart readings={readings} />
+        //     </div>
+        //   </div>
+        // )
+      }
+    },
+    // {
+    //   title: 'Success Rate', field: 'last_run', width: "30%",
+    //   render: (rowData) => (
+    //     <div style={{ display: 'flex', flexDirection: 'row' }}>
+    //       <Tooltip title={`Total Pass ${rowData.total_pass}`}>
+    //         <div style={{ flex: 1 }}>
+    //           <CmtProgressBar total={rowData.total_pass} containedColor={'#04ca49'} thickness={12} hideValue={true} />
+    //         </div>
+    //       </Tooltip>
+    //       <Tooltip title={`Total Failed ${rowData.total_fail}`}>
+    //         <div style={{ flex: 1, marginLeft: '-1%' }}>
+    //           <CmtProgressBar total={rowData.total_fail} containedColor={'#a70505'} thickness={12} hideValue={true} />
+    //         </div>
+    //       </Tooltip>
+    //     </div>
+    //   )
+    // },
+    //
+    // labelPos: 'top-left',
+    // total: 100,
+    // valuePos: 'right',
+    // containedColor: '#1a90ff',
+    // gradientDirection: 'to right',
+    // emptyColor: '#e9ecef',
+    // thickness: 4,
+    // pointer: false,
+    // pointerSize: 8,
+    // onlyContained: false,
+    // hideValue: false,
+    // render: (rowData) => {
+    //   return (
+    //     <div>
+    //       <h5><BarChart /></h5>
+    //     </div>
+    //   )
+    // }
     {
       title: 'Status', field: 'is_running', render: (rowData) => {
         return (
@@ -251,6 +344,15 @@ const ListAll = (props) => {
     setTimeout(() => {
       setRowData(selectedRows[0])
       setShowEdit(true)
+    }, 10);
+  }
+
+  const historyClick = async () => {
+    setTimeout(() => {
+      setRowData(selectedRows[0])
+      var cipher = crypto.createCipher(Constants.ALGO, Constants.TKV);
+      var encrypted = cipher.update(selectedRows[0]._id, 'utf8', 'hex') + cipher.final('hex');
+      window.open(window.location.origin + `/app/testruns/` + encrypted, '_blank');
     }, 10);
   }
 
@@ -714,6 +816,20 @@ const ListAll = (props) => {
                 >
                   <Fab size="small" color="default" aria-label="add" onClick={duplicateRowClick} disabled={busy}>
                     <FileCopy />
+                  </Fab>
+                </Tooltip>
+                &nbsp;&nbsp;
+              </Fade>
+            }
+
+            {selectedRows.length === 1 &&
+              <Fade bottom opposite cascade >
+                &nbsp;&nbsp;
+                <Tooltip
+                  title={"Test Runs"}
+                >
+                  <Fab size="small" color="default" aria-label="add" onClick={historyClick} disabled={busy}>
+                    <History />
                   </Fab>
                 </Tooltip>
                 &nbsp;&nbsp;

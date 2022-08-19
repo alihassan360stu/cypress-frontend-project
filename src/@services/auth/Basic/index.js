@@ -33,6 +33,22 @@ const BasicAuth = {
       }
     };
   },
+  updateUser: (user) => {
+    return async dispatch => {
+      try {
+        dispatch(fetchStart());
+        user.issue_date = moment()
+        var ciphertext = CryptoJS.AES.encrypt(JSON.stringify(user), MKV).toString();
+        localStorage.setItem('cypress_user_1001', ciphertext);
+        dispatch(setAuthUser(user));
+        dispatch(setOrganizations(user.organization));
+        dispatch(fetchSuccess());
+      } catch (error) {
+        dispatch(fetchSuccess());
+        dispatch(fetchError(error.message ? error.message : error));
+      }
+    };
+  },
   onRegister: (data) => {
     return async dispatch => {
       try {

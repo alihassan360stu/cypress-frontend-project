@@ -27,7 +27,8 @@ import { ExportCsv, ExportPdf } from '@material-table/exporters';
 import moment from 'moment';
 import AddNew from './AddNew';
 import { useDispatch } from 'react-redux';
-import { setSelectedOrg } from '@redux/actions';
+// import { setSelectedOrg } from '@redux/actions';
+import OrgRootId from '@redux/actions/OrgRootId';
 const MySwal = withReactContent(Swal);
 
 const breadcrumbs = [];
@@ -144,7 +145,7 @@ const ListAll = (props) => {
       title: 'S#', width: "4%", field: 'index', render: (rowData) => {
         return (
           <div>
-            <h4>{rowData.index}</h4>
+            <h5>{rowData.index}</h5>
           </div>
         )
       }
@@ -153,7 +154,7 @@ const ListAll = (props) => {
       title: 'Name', field: 'name', render: (rowData) => {
         return (
           <div>
-            <h4>{rowData.name}</h4>
+            <h5>{rowData.name}</h5>
           </div>
         )
       }
@@ -162,7 +163,7 @@ const ListAll = (props) => {
       title: 'Description', field: 'description', render: (rowData) => {
         return (
           <div>
-            <h4>{rowData.description}</h4>
+            <h5>{rowData.description}</h5>
           </div>
         )
       }
@@ -219,7 +220,7 @@ const ListAll = (props) => {
       showMessage('warning', 'Already Selected');
       return;
     }
-    dispatch(setSelectedOrg(rowData))
+    dispatch(OrgRootId(rowData))
   }
 
   const deleteRowClick = async (rowData) => {

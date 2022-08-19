@@ -1,13 +1,14 @@
 import React, { lazy, Suspense, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Redirect, Route, Switch, withRouter } from 'react-router';
+import {  Route, Switch, withRouter } from 'react-router';
 import PageLoader from '@jumbo/components/PageComponents/PageLoader';
 import AppLayout from './AppLayout';
 import Dashboard from './Dashboard'
-import { AddTest, ListTests } from './Tests'
+import { ListTests } from './Tests'
 import { ListOrgs } from './Organizations'
 import { ListGroups } from './Groups'
 import UnderConstruction from './UnderConstruction';
+import TestHistory from './TestHistory';
 import { useEffect } from 'react';
 
 const Routes = () => {
@@ -25,15 +26,15 @@ const Routes = () => {
         tempRoutes.push(<Route path={requestedUrl + `tests`} component={ListTests} />)
         tempRoutes.push(<Route path={requestedUrl + `runs`} component={UnderConstruction} />)
         tempRoutes.push(<Route path={requestedUrl + `groups`} component={ListGroups} />)
+        tempRoutes.push(<Route path={requestedUrl + `testruns/:id`} component={TestHistory} />)
       }
-
       setRoutes(tempRoutes)
-    }, 500);
+    }, 1000);
   }
 
   useEffect(() => {
     getRoutes();
-  }, [])
+  }, [orgs])
 
   return (
     <AppLayout>
@@ -41,7 +42,7 @@ const Routes = () => {
         <Switch>
           {routes}
           <Route path={requestedUrl + `orgs`} component={ListOrgs} />
-          <Route component={lazy(() => import('../Pages/404'))} />
+          <Route component={lazy(() => import('./404'))} />
         </Switch>
       </Suspense>
     </AppLayout>
